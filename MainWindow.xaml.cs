@@ -46,17 +46,7 @@ namespace ScribblePad {
       /// <param name="e"></param>
       void OnEraserClick (object sender, RoutedEventArgs e) { mPen.Brush = Brushes.Black; mPen.Thickness = 15; IsErase = true; }
 
-      /// <summary>Event handler to switch to pen</summary>
-      /// <param name="sender"></param>
-      /// <param name="e"></param>
-      void OnPenClick (object sender, RoutedEventArgs e) {
-         if (IsErase) {
-            mPen.Brush = mScribbles[^2].color;
-            mPen.Thickness = 2;
-            IsErase = false;
-         }
-      }
-
+      #region Mouse Events ----------------------------------------
       /// <summary>Event handler for mouse down event</summary>
       /// <param name="sender"></param>
       /// <param name="e"></param>
@@ -91,7 +81,9 @@ namespace ScribblePad {
             mPoints.Clear ();
          }
       }
+      #endregion
 
+      #region Open ----------------------------------------
       /// <summary>Event handler for open button click event</summary>
       /// <param name="sender"></param>
       /// <param name="e"></param>
@@ -155,6 +147,32 @@ namespace ScribblePad {
             InvalidateVisual ();
          }
       }
+      #endregion
+
+      /// <summary>Event handler to switch to pen</summary>
+      /// <param name="sender"></param>
+      /// <param name="e"></param>
+      void OnPenClick (object sender, RoutedEventArgs e) {
+         if (IsErase) {
+            for (int i = mScribbles.Count - 1; i >= 0; i--) {
+               if (mScribbles[i].color == Brushes.Black) continue;
+               mPen.Brush = mScribbles[i].color;
+               mPen.Thickness = mScribbles[i].thickness;
+               break;
+            }
+            IsErase = false;
+         }
+      }
+
+      /// <summary>Re-renders the deleted drawing</summary>
+      /// <param name="sender"></param>
+      /// <param name="e"></param>
+      void OnReDo (object sender, RoutedEventArgs e) {
+         if (mStack.Count > 0) {
+            mScribbles.Add (mStack.Pop ());
+            InvalidateVisual ();
+         }
+      }
 
       /// <summary>Overriding on-render method for main window</summary> 
       /// <param name="dc"></param>
@@ -167,6 +185,18 @@ namespace ScribblePad {
             dc.DrawLine (new Pen (mPen.Brush, mPen.Thickness), mPoints[i - 1], mPoints[i]);
       }
 
+      /// <summary>Deletes the last drawing</summary>
+      /// <param name="sender"></param>
+      /// <param name="e"></param>
+      void OnUnDo (object sender, RoutedEventArgs e) {
+         if (mScribbles.Count > 0) {
+            mStack.Push (mScribbles.Last ());
+            mScribbles.Remove (mScribbles.Last ());
+            InvalidateVisual ();
+         }
+      }
+
+      #region Save ----------------------------------------
       /// <summary>Event handler for save button click event</summary>
       /// <param name="sender"></param>
       /// <param name="e"></param>
@@ -189,13 +219,15 @@ namespace ScribblePad {
       void SaveText (string path) {
          using (TextWriter writer = new StreamWriter (path)) {
             writer.WriteLine (mScribbles.Count); // Total number of scribbles
-            foreach (var (count, color, thickness, points) in mScribbles) {
+            int count = 1;
+            foreach (var (_, color, thickness, points) in mScribbles) {
                writer.WriteLine ($"List{count}");
                writer.WriteLine (color.ToString ());
                writer.WriteLine ($"{thickness}");
                writer.WriteLine (points.Count);
                for (int i = 0; i < points.Count; i++)
                   writer.WriteLine (points[i]);
+               count++;
             }
          }
       }
@@ -224,8 +256,11 @@ namespace ScribblePad {
       }
       #endregion
 
+      #endregion
+
       #region Private data ------------------------------------------
       List<(int count, Brush color, double thickness, List<Point> points)> mScribbles = new ();
+      Stack<(int count, Brush color, double thickness, List<Point> points)> mStack = new ();
       Pen mPen = new (Brushes.White, 2);
       List<Point> mPoints = new ();
       Point mStart, mEnd = new ();

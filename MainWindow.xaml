@@ -9,7 +9,7 @@
                 <MenuItem Header="Open" Click="OnOpenClick"/>
             </MenuItem>
         </Menu>
-        <ToolBar Height="35" Width="125">
+        <ToolBar Height="35" Width="200">
             <Button x:Name="Pen" Click="OnColorFillClick">
                 <Image Source="Images/color.png"/>
             </Button>
@@ -20,6 +20,14 @@
             <Separator/>
             <Button Click="OnPenClick">
                 <Image Source="Images/pencil.png"/>
+            </Button>
+            <Separator/>
+            <Button Click="OnUnDo">
+                <Image Source="Images/undo.png"/>
+            </Button>
+            <Separator/>
+            <Button Click="OnReDo">
+                <Image Source="Images/redo.png"/>
             </Button>
         </ToolBar>
     </StackPanel>
