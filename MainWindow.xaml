@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="ScribblePad" Height="350" Width="525" Background="Transparent" WindowState="Maximized">
-    <StackPanel VerticalAlignment="Top" Height="63">
+    <StackPanel VerticalAlignment="Top" Height="92">
         <Menu Height="20">
             <MenuItem Header="File">
                 <MenuItem Header="New" Click="OnNew"/>
@@ -10,33 +10,41 @@
                 <MenuItem Header="Save" Click="OnSave"/>
             </MenuItem>
         </Menu>
-        <ToolBar Height="35" Width="277">
-            <Button Click="OnRect">
-                <Image Source="Images/rectangle.png"/>
-            </Button>
-            <Separator/>
-            <Button Click="OnEllipse">
-                <Image Source="Images/ellipse.png"/>
-            </Button>
-            <Separator/>
-            <Button Click="OnLine">
-                <Image Source="Images/line.png"/>
-            </Button>
-            <Separator/>
-            <Button Click="OnScribble">
+        <ToolBar Height="35" Header="Tools">
+            <Button Click="OnScribble" ToolTip="Pen">
                 <Image Source="Images/pencil.png"/>
             </Button>
             <Separator/>
-            <Button Click="OnCircle">
-                <Image Source="Images/circle.png"/>
+            <Button Click="OnErase" ToolTip="Erase a part of the drawing and replaces with the background color">
+                <Image Source="Images/eraser.png"/>
             </Button>
             <Separator/>
-            <Button Click="OnUnDo">
+            <Button Click="OnColorChange" ToolTip="Change the color of the drawing">
+                <Image Source="Images/color.png"/>
+            </Button>
+            <Separator/>
+            <Button Click="OnUnDo" ToolTip="Undo last action">
                 <Image Source="Images/undo.png"/>
             </Button>
             <Separator/>
-            <Button Click="OnReDo">
+            <Button Click="OnReDo" ToolTip="Redo last action">
                 <Image Source="Images/redo.png"/>
+            </Button>
+            <Label Content="Shapes" Width="54" Margin="30,0,0,0"/>
+            <Button Click="OnLine" ToolTip="Line">
+                <Image Source="Images/line.png"/>
+            </Button>
+            <Separator/>
+            <Button Click="OnEllipse" ToolTip="Ellipse">
+                <Image Source="Images/ellipse.png"/>
+            </Button>
+            <Separator/>
+            <Button Click="OnRect" ToolTip="Rectangle">
+                <Image Source="Images/rectangle.png"/>
+            </Button>
+            <Separator/>
+            <Button Click="OnCircle" ToolTip="Circle">
+                <Image Source="Images/circle.png"/>
             </Button>
         </ToolBar>
     </StackPanel>
