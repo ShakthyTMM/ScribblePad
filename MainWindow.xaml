@@ -8,6 +8,7 @@
                 <MenuItem Header="New" Click="OnNew"/>
                 <MenuItem Header="Open" Click="OnOpen"/>
                 <MenuItem Header="Save" Click="OnSave"/>
+                <MenuItem Header="SaveAs" Click="OnSaveAs"/>
             </MenuItem>
         </Menu>
         <ToolBar Height="35" Header="Tools">

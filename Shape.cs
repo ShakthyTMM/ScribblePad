@@ -36,6 +36,7 @@ namespace DrawingShapes {
          mEndPoint.Y = reader.ReadDouble ();
          mRect = new Rect (mStartPoint, mEndPoint);
       }
+
       public override void Save (BinaryWriter writer) {
          writer.Write (1);    // Used for identification of rectangle from the binary file
          writer.Write (mStartPoint.X);

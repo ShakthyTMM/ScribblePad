@@ -152,6 +152,7 @@ namespace DrawingShapes {
       void OnNew (object sender, RoutedEventArgs e) {
          if (IsSaved) {
             mShapes.Clear ();
+            IsSaved= false;
             InvalidateVisual ();
          } else PopUp ();
 
@@ -159,13 +160,14 @@ namespace DrawingShapes {
             DialogResult dr = MessageBox.Show ("Do you want to save changes to Untitled?", "ScribblePad", MessageBoxButtons.YesNo);   // Prompting the user to save the drawing
             switch (dr) {
                case System.Windows.Forms.DialogResult.Yes:
-                  OnSave (sender, e);    // Triggering save event if pressed 'yes'
+                  OnSaveAs (sender, e);    // Triggering save event if pressed 'yes'
                   break;
                case System.Windows.Forms.DialogResult.No:
                   mShapes.Clear ();    // Clearing the drawing if pressed 'no'
                   InvalidateVisual ();
                   break;
             }
+            IsSaved= false;
          }
       }
 
@@ -176,7 +178,9 @@ namespace DrawingShapes {
          OpenFileDialog dlgBox = new ();
          dlgBox.Title = "Select a file";
          dlgBox.Filter = "Binary File|*.bin";
-         if (dlgBox.ShowDialog () == System.Windows.Forms.DialogResult.OK)
+         if (dlgBox.ShowDialog () == System.Windows.Forms.DialogResult.OK) {
+            IsSaved = true;
+            pathToFile = dlgBox.FileName;
             using (BinaryReader reader = new (File.Open (dlgBox.FileName, FileMode.Open))) {
                int totalCount = reader.ReadInt32 ();
                for (int i = 0; i < totalCount; i++) {
@@ -223,19 +227,29 @@ namespace DrawingShapes {
                   }
                }
             }
+         }
       }
 
       /// <summary>Click event for save menu item</summary>
       /// <param name="sender"></param>
       /// <param name="e"></param>
-      void OnSave (object sender, RoutedEventArgs e) {
+      void OnSave (object sender, RoutedEventArgs e) => OnSaveAs (sender, e);
+
+      /// <summary>Click event for save as menu item</summary>
+      /// <param name="sender"></param>
+      /// <param name="e"></param>
+      void OnSaveAs (object sender, RoutedEventArgs e) {
          SaveFileDialog dlgBox = new ();
          dlgBox.FileName = "Untitled";
          dlgBox.Filter = "Binary File|*.bin";
-         DialogResult dr = dlgBox.ShowDialog ();
+         DialogResult dr;
+         if (IsSaved) {
+            dr = System.Windows.Forms.DialogResult.OK;
+            dlgBox.FileName = pathToFile;
+         } else dr = dlgBox.ShowDialog ();
          if (dr == System.Windows.Forms.DialogResult.OK) {
             IsSaved = true;
-            var pathToFile = dlgBox.FileName;
+            pathToFile = dlgBox.FileName;
             using (BinaryWriter writer = new (File.Open (pathToFile, FileMode.Create))) {
                writer.Write (mShapes.Count); // Total number of shapes
                foreach (var shape in mShapes) {
@@ -269,6 +283,7 @@ namespace DrawingShapes {
       bool IsSaved = false;        // Keeps track whether the drawing is saved or not
       bool IsDrawing = false;       // Holds the mouse state
       string mSelectedShape = "Scribble";       // The selected shape as string
+      string pathToFile;
       #endregion
    }
    #endregion
