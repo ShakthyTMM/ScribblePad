@@ -9,6 +9,7 @@
                 <MenuItem Header="Open" Click="OnOpen"/>
                 <MenuItem Header="Save" Click="OnSave"/>
                 <MenuItem Header="SaveAs" Click="OnSaveAs"/>
+                <MenuItem Header="Exit" Click="OnExit"/>
             </MenuItem>
         </Menu>
         <ToolBar Height="35" Header="Tools">
@@ -24,11 +25,11 @@
                 <Image Source="Images/color.png"/>
             </Button>
             <Separator/>
-            <Button Click="OnUnDo" ToolTip="Undo last action">
+            <Button x:Name="mUndo" Click="OnUnDo" ToolTip="Undo last action">
                 <Image Source="Images/undo.png"/>
             </Button>
             <Separator/>
-            <Button Click="OnReDo" ToolTip="Redo last action">
+            <Button x:Name="mRedo" Click="OnReDo" ToolTip="Redo last action">
                 <Image Source="Images/redo.png"/>
             </Button>
             <Label Content="Shapes" Width="54" Margin="30,0,0,0"/>

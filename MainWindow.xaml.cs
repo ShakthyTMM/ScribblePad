@@ -15,6 +15,7 @@ using System.Windows.Forms;
 using System.Windows.Media;
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;
 using MessageBox = System.Windows.Forms.MessageBox;
+using System.ComponentModel;
 
 namespace DrawingShapes {
    #region Program ---------------------------------------------------------------------------------------- 
@@ -26,11 +27,7 @@ namespace DrawingShapes {
          MouseUp += OnMouseUp;
       }
 
-      #region Click Events ----------------------------------------
-      /// <summary>Click event for circle button</summary>
-      /// <param name="sender"></param>
-      /// <param name="e"></param>
-      void OnCircle (object sender, RoutedEventArgs e) => mSelectedShape = "Circle";
+      #region Tools ----------------------------------------
 
       /// <summary>Click event for color change button</summary>
       /// <param name="sender"></param>
@@ -41,40 +38,24 @@ namespace DrawingShapes {
             mPen.Brush = new SolidColorBrush (Color.FromArgb (dialog.Color.A, dialog.Color.R, dialog.Color.G, dialog.Color.B));  // Gets the ARGB bytes from the color selected
       }
 
-      /// <summary>Click event for ellipse button</summary>
-      /// <param name="sender"></param>
-      /// <param name="e"></param>
-      void OnEllipse (object sender, RoutedEventArgs e) => mSelectedShape = "Ellipse";
-
       /// <summary>Click event for erase button</summary>
       /// <param name="sender"></param>
       /// <param name="e"></param>
-      void OnErase (object sender, RoutedEventArgs e) => mSelectedShape = "Eraser";
-
-      /// <summary>Click event for line button</summary>
-      /// <param name="sender"></param>
-      /// <param name="e"></param>
-      void OnLine (object sender, RoutedEventArgs e) => mSelectedShape = "Line";
-
-      /// <summary>Click event for rectangle button</summary>
-      /// <param name="sender"></param>
-      /// <param name="e"></param>
-      void OnRect (object sender, RoutedEventArgs e) => mSelectedShape = "Rectangle";
+      void OnErase (object sender, RoutedEventArgs e) => mSelectedShape = Shapes.Eraser;
 
       /// <summary>Click event for redo button</summary>
       /// <param name="sender"></param>
       /// <param name="e"></param>
       void OnReDo (object sender, RoutedEventArgs e) {
          if (mStack.Count > 0) {
-            mShapes.Add (mStack.Pop ());
-            InvalidateVisual ();
+            if (mCount != mShapes.Count) mStack.Clear ();
+            else {
+               mShapes.Add (mStack.Pop ());
+               mCount = mShapes.Count;
+               InvalidateVisual ();
+            }
          }
       }
-
-      /// <summary>Click event for pen button</summary>
-      /// <param name="sender"></param>
-      /// <param name="e"></param>
-      void OnScribble (object sender, RoutedEventArgs e) => mSelectedShape = "Scribble";
 
       /// <summary>Click event for undo button</summary>
       /// <param name="sender"></param>
@@ -83,9 +64,38 @@ namespace DrawingShapes {
          if (mShapes.Count > 0) {
             mStack.Push (mShapes.Last ());
             mShapes.Remove (mShapes.Last ());
+            mCount = mShapes.Count;
             InvalidateVisual ();
          }
       }
+
+      /// <summary>Click event for pen button</summary>
+      /// <param name="sender"></param>
+      /// <param name="e"></param>
+      void OnScribble (object sender, RoutedEventArgs e) => mSelectedShape = Shapes.Scribble;
+
+      #endregion
+
+      #region Shapes ----------------------------------------
+      /// <summary>Click event for circle button</summary>
+      /// <param name="sender"></param>
+      /// <param name="e"></param>
+      void OnCircle (object sender, RoutedEventArgs e) => mSelectedShape = Shapes.Circle;
+
+      /// <summary>Click event for ellipse button</summary>
+      /// <param name="sender"></param>
+      /// <param name="e"></param>
+      void OnEllipse (object sender, RoutedEventArgs e) => mSelectedShape = Shapes.Ellipse;
+
+      /// <summary>Click event for line button</summary>
+      /// <param name="sender"></param>
+      /// <param name="e"></param>
+      void OnLine (object sender, RoutedEventArgs e) => mSelectedShape = Shapes.Line;
+
+      /// <summary>Click event for rectangle button</summary>
+      /// <param name="sender"></param>
+      /// <param name="e"></param>
+      void OnRect (object sender, RoutedEventArgs e) => mSelectedShape = Shapes.Rectangle;
       #endregion
 
       #region Mouse Events ----------------------------------------
@@ -95,22 +105,22 @@ namespace DrawingShapes {
       void OnMouseDown (object sender, MouseEventArgs e) {
          mStartPoint = e.GetPosition (this);
          switch (mSelectedShape) {
-            case "Rectangle":
+            case Shapes.Rectangle:
                mCurrentShape = new Rectangle (mStartPoint);
                break;
-            case "Ellipse":
+            case Shapes.Ellipse:
                mCurrentShape = new Ellipse (mStartPoint);
                break;
-            case "Circle":
+            case Shapes.Circle:
                mCurrentShape = new Circle (mStartPoint);
                break;
-            case "Line":
+            case Shapes.Line:
                mCurrentShape = new Line (mStartPoint);
                break;
-            case "Scribble":
+            case Shapes.Scribble:
                mCurrentShape = new Scribble (mStartPoint);
                break;
-            case "Eraser":
+            case Shapes.Eraser:
                mCurrentShape = new Eraser (mStartPoint);
                break;
             default: break;
@@ -145,29 +155,41 @@ namespace DrawingShapes {
       }
       #endregion
 
-      #region Menu Items(New, Save, Open) ----------------------------------------
+      #region Menu Items ----------------------------------------
+      /// <summary>Click event for exit menu item</summary>
+      /// <param name="sender"></param>
+      /// <param name="e"></param>
+      void OnExit (object sender, RoutedEventArgs e) {
+         if (!IsSaved && mShapes.Count != 0) Prompt (sender, e);
+         else Close ();
+      }
+
       /// <summary>Click event of new menu item</summary>
       /// <param name="sender"></param>
       /// <param name="e"></param>
       void OnNew (object sender, RoutedEventArgs e) {
          if (IsSaved) {
             mShapes.Clear ();
-            IsSaved= false;
+            IsSaved = false;
             InvalidateVisual ();
-         } else PopUp ();
+         } else if (mShapes.Count != 0) Prompt (sender, e);
+      }
 
-         void PopUp () {    // Pops up a message box 
-            DialogResult dr = MessageBox.Show ("Do you want to save changes to Untitled?", "ScribblePad", MessageBoxButtons.YesNo);   // Prompting the user to save the drawing
-            switch (dr) {
-               case System.Windows.Forms.DialogResult.Yes:
-                  OnSaveAs (sender, e);    // Triggering save event if pressed 'yes'
-                  break;
-               case System.Windows.Forms.DialogResult.No:
-                  mShapes.Clear ();    // Clearing the drawing if pressed 'no'
-                  InvalidateVisual ();
-                  break;
-            }
-            IsSaved= false;
+      // Prompts the user to save the drawing
+      void Prompt (object sender, RoutedEventArgs e) {
+         DialogResult dr = MessageBox.Show ("Do you want to save changes to Untitled?", "ScribblePad", MessageBoxButtons.YesNoCancel);
+         switch (dr) {
+            case System.Windows.Forms.DialogResult.Yes:
+               OnSaveAs (sender, e);    // Triggering save event if pressed 'yes'
+               break;
+            case System.Windows.Forms.DialogResult.No:
+               IsSaved = false;
+               mShapes.Clear ();    // Clearing the drawing if pressed 'no'
+               InvalidateVisual ();
+               break;
+            case System.Windows.Forms.DialogResult.Cancel:
+               IsCancelled = true;
+               return;
          }
       }
 
@@ -179,61 +201,42 @@ namespace DrawingShapes {
          dlgBox.Title = "Select a file";
          dlgBox.Filter = "Binary File|*.bin";
          if (dlgBox.ShowDialog () == System.Windows.Forms.DialogResult.OK) {
-            IsSaved = true;
-            pathToFile = dlgBox.FileName;
-            using (BinaryReader reader = new (File.Open (dlgBox.FileName, FileMode.Open))) {
-               int totalCount = reader.ReadInt32 ();
-               for (int i = 0; i < totalCount; i++) {
-                  byte a = reader.ReadByte (); byte b = reader.ReadByte (); byte r = reader.ReadByte (); byte g = reader.ReadByte ();
-                  var brush = new SolidColorBrush (Color.FromArgb (a, r, g, b));
-                  switch (reader.ReadInt32 ()) { // Reads the file based on the shape (1- rectangle, 2- ellipse, 3- circle, 4- line, 5- scribble, 6- eraser)
-                     case 1:
-                        var rect = new Rectangle ();
-                        rect.Open (reader);
-                        mShapes.Add ((rect, brush));
+            if (mShapes.Count != 0 && !IsSaved) Prompt (sender, e);
+            if (IsSaved) {
+               mShapes.Clear ();
+               InvalidateVisual ();
+            }
+            if (!IsCancelled)
+               using (BinaryReader reader = new (File.Open (dlgBox.FileName, FileMode.Open))) {
+                  IsSaved= true;
+                  pathToFile = dlgBox.FileName;
+                  int totalCount = reader.ReadInt32 ();
+                  for (int i = 0; i < totalCount; i++) {
+                     byte a = reader.ReadByte (); byte b = reader.ReadByte (); byte r = reader.ReadByte (); byte g = reader.ReadByte ();
+                     var brush = new SolidColorBrush (Color.FromArgb (a, r, g, b));
+                     switch (reader.ReadInt32 ()) { // Reads the file based on the shape (1- rectangle, 2- ellipse, 3- circle, 4- line, 5- scribble, 6- eraser)
+                        case 1: Read (reader, new Rectangle ()); break;
+                        case 2: Read (reader, new Ellipse ()); break;
+                        case 3: Read (reader, new Circle ()); break;
+                        case 4: Read (reader, new Line ()); break;
+                        case 5: Read (reader, new Scribble ()); break;
+                        case 6: Read (reader, new Eraser ()); break;
+                     }
+
+                     void Read (BinaryReader reader, Shape shape) {
+                        shape.Open (reader);
+                        mShapes.Add ((shape, brush));
                         InvalidateVisual ();
-                        break;
-                     case 2:
-                        var ellipse = new Ellipse ();
-                        ellipse.Open (reader);
-                        mShapes.Add ((ellipse, brush));
-                        InvalidateVisual ();
-                        break;
-                     case 3:
-                        var circle = new Circle ();
-                        circle.Open (reader);
-                        mShapes.Add ((circle, brush));
-                        InvalidateVisual ();
-                        break;
-                     case 4:
-                        var line = new Line ();
-                        line.Open (reader);
-                        mShapes.Add ((line, brush));
-                        InvalidateVisual ();
-                        break;
-                     case 5:
-                        var scribble = new Scribble ();
-                        scribble.Open (reader);
-                        mShapes.Add ((scribble, brush));
-                        InvalidateVisual ();
-                        break;
-                     case 6:
-                        var eraser = new Eraser ();
-                        eraser.Open (reader);
-                        mShapes.Add ((eraser, brush));
-                        InvalidateVisual ();
-                        break;
-                     default: break;
+                     }
                   }
                }
-            }
          }
       }
 
       /// <summary>Click event for save menu item</summary>
       /// <param name="sender"></param>
       /// <param name="e"></param>
-      void OnSave (object sender, RoutedEventArgs e) => OnSaveAs (sender, e);
+      void OnSave (object sender, RoutedEventArgs e) => OnSaveAs (null, e);
 
       /// <summary>Click event for save as menu item</summary>
       /// <param name="sender"></param>
@@ -243,14 +246,14 @@ namespace DrawingShapes {
          dlgBox.FileName = "Untitled";
          dlgBox.Filter = "Binary File|*.bin";
          DialogResult dr;
-         if (IsSaved) {
+         if (IsSaved && sender == null) {
             dr = System.Windows.Forms.DialogResult.OK;
             dlgBox.FileName = pathToFile;
          } else dr = dlgBox.ShowDialog ();
          if (dr == System.Windows.Forms.DialogResult.OK) {
             IsSaved = true;
-            pathToFile = dlgBox.FileName;
-            using (BinaryWriter writer = new (File.Open (pathToFile, FileMode.Create))) {
+            IsCancelled = false;
+            using (BinaryWriter writer = new (File.Open (dlgBox.FileName, FileMode.Create))) {
                writer.Write (mShapes.Count); // Total number of shapes
                foreach (var shape in mShapes) {
                   var brush = shape.Item2;
@@ -263,6 +266,16 @@ namespace DrawingShapes {
          }
       }
       #endregion
+
+      /// <summary>Overriding on-closing method of main window</summary>
+      /// <param name="e"></param>
+      protected override void OnClosing (CancelEventArgs e) {
+         if (!IsSaved && mShapes.Count != 0) {
+            Prompt (null, null);
+            if (IsCancelled) e.Cancel = true;
+            if(!IsSaved) base.OnClosing (e);
+         } else base.OnClosing (e);
+      }
 
       /// <summary>Overriding on-render method</summary>
       /// <param name="dc"></param>
@@ -281,9 +294,12 @@ namespace DrawingShapes {
       Point mStartPoint, mEndPoint;
       Shape mCurrentShape;         // Shape which is being rendered
       bool IsSaved = false;        // Keeps track whether the drawing is saved or not
-      bool IsDrawing = false;       // Holds the mouse state
-      string mSelectedShape = "Scribble";       // The selected shape as string
-      string pathToFile;
+      bool IsDrawing = false;      // Holds the mouse state
+      bool IsCancelled = false;    // True, if user clicks 'cancel' to save the drawing
+      string pathToFile;           // Path of the saved file
+      int mCount;                  // Holds count of the shapes after undo operation
+      Shapes mSelectedShape = Shapes.Scribble;    // Sets default shape as scribble
+      enum Shapes { Rectangle, Ellipse, Line, Circle, Scribble, Eraser }
       #endregion
    }
    #endregion

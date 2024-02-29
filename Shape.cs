@@ -30,18 +30,18 @@ namespace DrawingShapes {
          dc.DrawRectangle (null, new Pen (brush, 2), mRect);
 
       public override void Open (BinaryReader reader) {
-         mStartPoint.X = reader.ReadDouble ();
+         mStartPoint.X = reader.ReadDouble (); 
          mStartPoint.Y = reader.ReadDouble ();
-         mEndPoint.X = reader.ReadDouble ();
+         mEndPoint.X = reader.ReadDouble (); 
          mEndPoint.Y = reader.ReadDouble ();
          mRect = new Rect (mStartPoint, mEndPoint);
       }
 
       public override void Save (BinaryWriter writer) {
          writer.Write (1);    // Used for identification of rectangle from the binary file
-         writer.Write (mStartPoint.X);
+         writer.Write (mStartPoint.X); 
          writer.Write (mStartPoint.Y);
-         writer.Write (mEndPoint.X);
+         writer.Write (mEndPoint.X); 
          writer.Write (mEndPoint.Y);
       }
 
@@ -63,30 +63,29 @@ namespace DrawingShapes {
          dc.DrawGeometry (null, new Pen (brush, 2), mEllipse);
 
       public override void Open (BinaryReader reader) {
-         radiusX = reader.ReadDouble ();
+         radiusX = reader.ReadDouble (); 
          radiusY = reader.ReadDouble ();
-         center.X = reader.ReadDouble ();
-         center.Y = reader.ReadDouble ();
-         mEllipse = new EllipseGeometry (center, radiusX, radiusY);
+         mStartPoint.X = reader.ReadDouble (); 
+         mStartPoint.Y = reader.ReadDouble ();
+         mEllipse = new EllipseGeometry (mStartPoint, radiusX, radiusY);
       }
 
       public override void Save (BinaryWriter writer) {
          writer.Write (2);    // Used for identification of ellipse in binary file
-         writer.Write (radiusX); writer.Write (radiusY);
-         writer.Write (center.X);
-         writer.Write (center.Y);
+         writer.Write (radiusX); 
+         writer.Write (radiusY);
+         writer.Write (mStartPoint.X); 
+         writer.Write (mStartPoint.Y);
       }
 
       public override void Update (Point endPoint) {
          radiusX = Math.Abs (endPoint.X - mStartPoint.X) / 2;
          radiusY = Math.Abs (endPoint.Y - mStartPoint.Y) / 2;
-         center = new (mStartPoint.X + radiusX, mStartPoint.Y + radiusY);
-         mEllipse = new EllipseGeometry (center, radiusX, radiusY);
+         mEllipse = new EllipseGeometry (mStartPoint, radiusX, radiusY);
       }
 
       EllipseGeometry mEllipse;
       double radiusX, radiusY;
-      Point center;
    }
 
    class Circle : Shape {        // Circle class
@@ -98,28 +97,25 @@ namespace DrawingShapes {
          dc.DrawGeometry (null, new Pen (brush, 2), mCircle);
 
       public override void Open (BinaryReader reader) {
-         center.X = reader.ReadDouble ();
-         center.Y = reader.ReadDouble ();
+         mStartPoint.X = reader.ReadDouble (); 
+         mStartPoint.Y = reader.ReadDouble ();
          radius = reader.ReadDouble ();
-         mCircle = new EllipseGeometry (center, radius, radius);
+         mCircle = new EllipseGeometry (mStartPoint, radius, radius);
       }
 
       public override void Save (BinaryWriter writer) {
          writer.Write (3);    // Used for identification of circle in binary file
-         writer.Write (center.X);
-         writer.Write (center.Y);
+         writer.Write (mStartPoint.X); writer.Write (mStartPoint.Y);
          writer.Write (radius);
       }
 
       public override void Update (Point endPoint) {
          radius = Math.Abs (endPoint.X - mStartPoint.X) / 2;
-         center = new (mStartPoint.X + radius, mStartPoint.Y + radius);
-         mCircle = new EllipseGeometry (center, radius, radius);
+         mCircle = new EllipseGeometry (mStartPoint, radius, radius);
       }
 
       EllipseGeometry mCircle;
       double radius;
-      Point center;
    }
 
    class Line : Shape {       // Line class
