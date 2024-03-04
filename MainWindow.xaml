@@ -1,8 +1,8 @@
 ﻿<Window x:Class="DrawingShapes.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="ScribblePad" Height="350" Width="525" Background="Transparent" WindowState="Maximized">
-    <StackPanel VerticalAlignment="Top" Height="92">
+        Title="ScribblePad" Height="350" Width="525" Background="Transparent" WindowState="Maximized" KeyDown="OnKeyDown">
+    <StackPanel VerticalAlignment="Top" Height="92" >
         <Menu Height="20">
             <MenuItem Header="File">
                 <MenuItem Header="New" Click="OnNew"/>
@@ -13,7 +13,7 @@
             </MenuItem>
         </Menu>
         <ToolBar Height="35" Header="Tools">
-            <Button Click="OnScribble" ToolTip="Pen">
+            <Button Click="OnScribble" ToolTip="Pen" >
                 <Image Source="Images/pencil.png"/>
             </Button>
             <Separator/>
@@ -26,15 +26,19 @@
             </Button>
             <Separator/>
             <Button x:Name="mUndo" Click="OnUnDo" ToolTip="Undo last action">
-                <Image Source="Images/undo.png"/>
+                <Image x:Name="mUI" Source="Images/undo.png"/>
             </Button>
             <Separator/>
             <Button x:Name="mRedo" Click="OnReDo" ToolTip="Redo last action">
-                <Image Source="Images/redo.png"/>
+                <Image x:Name="mRI" Source="Images/redo.png"/>
             </Button>
             <Label Content="Shapes" Width="54" Margin="30,0,0,0"/>
             <Button Click="OnLine" ToolTip="Line">
                 <Image Source="Images/line.png"/>
+            </Button>
+            <Separator/>
+            <Button Click="OnConnectedLine" ToolTip="Connected Lines">
+                <Image Source="Images/connected line.png"/>
             </Button>
             <Separator/>
             <Button Click="OnEllipse" ToolTip="Ellipse">

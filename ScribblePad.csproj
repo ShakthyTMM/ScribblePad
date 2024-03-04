@@ -11,6 +11,7 @@
     <None Remove="color.png" />
     <None Remove="Images\circle.png" />
     <None Remove="Images\color.png" />
+    <None Remove="Images\connected line.png" />
     <None Remove="Images\ellipse.png" />
     <None Remove="Images\eraser.png" />
     <None Remove="Images\line.png" />
@@ -23,6 +24,7 @@
   <ItemGroup>
     <Resource Include="Images\circle.png" />
     <Resource Include="Images\color.png" />
+    <Resource Include="Images\connected line.png" />
     <Resource Include="Images\ellipse.png" />
     <Resource Include="Images\eraser.png" />
     <Resource Include="Images\line.png" />
