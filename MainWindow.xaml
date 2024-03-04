@@ -38,7 +38,7 @@
             </Button>
             <Separator/>
             <Button Click="OnConnectedLine" ToolTip="Connected Lines">
-                <Image Source="Images/connected line.png"/>
+                <Image Source="Images/connectedline.png"/>
             </Button>
             <Separator/>
             <Button Click="OnEllipse" ToolTip="Ellipse">
