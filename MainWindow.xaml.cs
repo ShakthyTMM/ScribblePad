@@ -17,6 +17,7 @@ using System.Windows.Input;
 using System.ComponentModel;
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;
 using MessageBox = System.Windows.Forms.MessageBox;
+using System.Windows.Controls.Primitives;
 
 namespace DrawingShapes {
    #region MainWindow ---------------------------------------------------------------------------------------- 
@@ -25,7 +26,7 @@ namespace DrawingShapes {
          InitializeComponent ();
          MouseDown += OnMouseDown;
          MouseMove += OnMouseMove;
-         EnableChanged (Tools.ReDo, false);    // Initially sets the 'IsEnabled' property of button as false
+         EnableChanged (Tools.ReDo, false);    // Initially sets the 'IsEnabled' property of button
          EnableChanged (Tools.UnDo, false);    // and image opacity
       }
 
@@ -42,7 +43,7 @@ namespace DrawingShapes {
       /// <summary>Click event for erase button</summary>
       /// <param name="sender"></param>
       /// <param name="e"></param>
-      void OnErase (object sender, RoutedEventArgs e) => mSelectedShape = Shapes.Eraser;
+      void OnErase (object sender, RoutedEventArgs e) { mSelectedShape = Shapes.Eraser; ToolChanged (sender); }
 
       /// <summary>Click event for redo button</summary>
       /// <param name="sender"></param>
@@ -82,32 +83,40 @@ namespace DrawingShapes {
       /// <summary>Click event for pen button</summary>
       /// <param name="sender"></param>
       /// <param name="e"></param>
-      void OnScribble (object sender, RoutedEventArgs e) => mSelectedShape = Shapes.Scribble;
+      void OnScribble (object sender, RoutedEventArgs e) { mSelectedShape = Shapes.Scribble; ToolChanged (sender); }
 
+      // Unchecks the toggle buttons after changing tool
+      void ToolChanged (object sender) {
+         foreach (var control in mToolBar.Items)
+            if (control is ToggleButton tb && sender is ToggleButton clicked_tb) {
+               if (tb == clicked_tb) tb.IsChecked = true;
+               else tb.IsChecked = false;
+            }
+      }
       #endregion
 
       #region Shapes ----------------------------------------
       /// <summary>Click event for circle button</summary>
       /// <param name="sender"></param>
       /// <param name="e"></param>
-      void OnCircle (object sender, RoutedEventArgs e) => mSelectedShape = Shapes.Circle;
+      void OnCircle (object sender, RoutedEventArgs e) { mSelectedShape = Shapes.Circle; ToolChanged (sender); }
 
-      void OnConnectedLine (object sender, RoutedEventArgs e) => mSelectedShape = Shapes.ConnectedLine;
+      void OnConnectedLine (object sender, RoutedEventArgs e) { mSelectedShape = Shapes.ConnectedLine; ToolChanged (sender); }
 
       /// <summary>Click event for ellipse button</summary>
       /// <param name="sender"></param>
       /// <param name="e"></param>
-      void OnEllipse (object sender, RoutedEventArgs e) => mSelectedShape = Shapes.Ellipse;
+      void OnEllipse (object sender, RoutedEventArgs e) { mSelectedShape = Shapes.Ellipse; ToolChanged (sender); }
 
       /// <summary>Click event for line button</summary>
       /// <param name="sender"></param>
       /// <param name="e"></param>
-      void OnLine (object sender, RoutedEventArgs e) => mSelectedShape = Shapes.Line;
+      void OnLine (object sender, RoutedEventArgs e) { mSelectedShape = Shapes.Line; ToolChanged (sender); }
 
       /// <summary>Click event for rectangle button</summary>
       /// <param name="sender"></param>
       /// <param name="e"></param>
-      void OnRect (object sender, RoutedEventArgs e) => mSelectedShape = Shapes.Rectangle;
+      void OnRect (object sender, RoutedEventArgs e) { mSelectedShape = Shapes.Rectangle; ToolChanged (sender); }
       #endregion
 
       #region Mouse Events ----------------------------------------
@@ -118,7 +127,7 @@ namespace DrawingShapes {
          if (e.RightButton == MouseButtonState.Released) {
             if (mCurrentShape is ConnectedLine) { UpdateShape (e); mCurrentShape.AddLines (mEndPoint); } else {
                if (IsDrawing) AddToList (e);
-               else {
+               else if (mSelectedShape != Shapes.None) {
                   mStartPoint = e.GetPosition (this);
                   switch (mSelectedShape) {
                      case Shapes.Rectangle:
@@ -285,7 +294,7 @@ namespace DrawingShapes {
       /// <param name="sender"></param>
       /// <param name="e"></param>
       void OnKeyDown (object sender, System.Windows.Input.KeyEventArgs e) {
-         if (e.Key == Key.Escape) { mCurrentShape.AddLines (mEndPoint); AddShapes (); }
+         if (mCurrentShape != null && e.Key == Key.Escape) { mCurrentShape.AddLines (mEndPoint); AddShapes (); }
       }
 
       // Routine to add shapes to the list
@@ -329,9 +338,9 @@ namespace DrawingShapes {
       bool IsCancelled = false;    // True, if user clicks 'cancel' to save the drawing
       string pathToFile;           // Path of the saved file
       int mCount;                  // Holds count of the shapes after undo operation
-      Shapes mSelectedShape = Shapes.Line;    // Sets default shape as line
+      Shapes mSelectedShape;    // To prevent having default shape as rectangle
       enum Tools { UnDo, ReDo }
-      enum Shapes { Rectangle, Ellipse, Line, Circle, Scribble, Eraser, ConnectedLine }
+      enum Shapes { None, Rectangle, Ellipse, Line, Circle, Scribble, Eraser, ConnectedLine }
       #endregion
    }
    #endregion

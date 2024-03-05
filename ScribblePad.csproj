@@ -15,7 +15,7 @@
     <None Remove="Images\ellipse.png" />
     <None Remove="Images\eraser.png" />
     <None Remove="Images\line.png" />
-    <None Remove="Images\pencil.png" />
+    <None Remove="Images\pen.png" />
     <None Remove="Images\rectangle.png" />
     <None Remove="Images\redo.png" />
     <None Remove="Images\undo.png" />
@@ -28,7 +28,7 @@
     <Resource Include="Images\ellipse.png" />
     <Resource Include="Images\eraser.png" />
     <Resource Include="Images\line.png" />
-    <Resource Include="Images\pencil.png" />
+    <Resource Include="Images\pen.png" />
     <Resource Include="Images\rectangle.png" />
     <Resource Include="Images\redo.png" />
     <Resource Include="Images\undo.png" />

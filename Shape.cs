@@ -78,7 +78,8 @@ namespace DrawingShapes {
       }
 
       public override void Update (Point endPoint) {
-         (radiusX, radiusY) = (Math.Abs (endPoint.X - mStartPoint.X) / 2, Math.Abs (endPoint.Y - mStartPoint.Y) / 2);
+         radiusX = endPoint.X - mStartPoint.X;
+         radiusY = endPoint.Y - mStartPoint.Y;
          mEllipse = new EllipseGeometry (mStartPoint, radiusX, radiusY);
       }
 
@@ -107,7 +108,7 @@ namespace DrawingShapes {
       }
 
       public override void Update (Point endPoint) {
-         radius = Math.Abs (endPoint.X - mStartPoint.X) / 2;
+         radius = Math.Sqrt (Math.Pow (endPoint.X - mStartPoint.X, 2) + Math.Pow (endPoint.Y - mStartPoint.Y, 2));
          mCircle = new EllipseGeometry (mStartPoint, radius, radius);
       }
 
@@ -252,5 +253,6 @@ namespace DrawingShapes {
    }
    #endregion
 
-   #endregion
 }
+#endregion
+

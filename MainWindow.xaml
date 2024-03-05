@@ -12,14 +12,19 @@
                 <MenuItem Header="Exit" Click="OnExit"/>
             </MenuItem>
         </Menu>
-        <ToolBar Height="35" Header="Tools">
-            <Button Click="OnScribble" ToolTip="Pen" >
-                <Image Source="Images/pencil.png"/>
-            </Button>
+        <ToolBar x:Name="mToolBar" Height="35" Header="Tools">
+            <!--<ToolBar.Resources>
+                <Style TargetType="{x:Type ToggleButton}">
+                    <Setter Property="IsChecked" Value=""/>
+                </Style>
+            </ToolBar.Resources>-->
+            <ToggleButton Click="OnScribble" ToolTip="Pen" >
+                <Image Source="Images/pen.png"/>
+            </ToggleButton>
             <Separator/>
-            <Button Click="OnErase" ToolTip="Erase a part of the drawing and replaces with the background color">
+            <ToggleButton Click="OnErase" ToolTip="Erase a part of the drawing and replaces with the background color">
                 <Image Source="Images/eraser.png"/>
-            </Button>
+            </ToggleButton>
             <Separator/>
             <Button Click="OnColorChange" ToolTip="Change the color of the drawing">
                 <Image Source="Images/color.png"/>
@@ -33,25 +38,25 @@
                 <Image x:Name="mRI" Source="Images/redo.png"/>
             </Button>
             <Label Content="Shapes" Width="54" Margin="30,0,0,0"/>
-            <Button Click="OnLine" ToolTip="Line">
+            <ToggleButton Click="OnLine" ToolTip="Line">
                 <Image Source="Images/line.png"/>
-            </Button>
+            </ToggleButton>
             <Separator/>
-            <Button Click="OnConnectedLine" ToolTip="Connected Lines">
+            <ToggleButton Click="OnConnectedLine" ToolTip="Connected Lines">
                 <Image Source="Images/connectedline.png"/>
-            </Button>
+            </ToggleButton>
             <Separator/>
-            <Button Click="OnEllipse" ToolTip="Ellipse">
+            <ToggleButton Click="OnEllipse" ToolTip="Ellipse">
                 <Image Source="Images/ellipse.png"/>
-            </Button>
+            </ToggleButton>
             <Separator/>
-            <Button Click="OnRect" ToolTip="Rectangle">
+            <ToggleButton Click="OnRect" ToolTip="Rectangle">
                 <Image Source="Images/rectangle.png"/>
-            </Button>
+            </ToggleButton>
             <Separator/>
-            <Button Click="OnCircle" ToolTip="Circle">
+            <ToggleButton Click="OnCircle" ToolTip="Circle">
                 <Image Source="Images/circle.png"/>
-            </Button>
+            </ToggleButton>
         </ToolBar>
     </StackPanel>
 </Window>
