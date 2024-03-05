@@ -13,11 +13,6 @@
             </MenuItem>
         </Menu>
         <ToolBar x:Name="mToolBar" Height="35" Header="Tools">
-            <!--<ToolBar.Resources>
-                <Style TargetType="{x:Type ToggleButton}">
-                    <Setter Property="IsChecked" Value=""/>
-                </Style>
-            </ToolBar.Resources>-->
             <ToggleButton Click="OnScribble" ToolTip="Pen" >
                 <Image Source="Images/pen.png"/>
             </ToggleButton>
