@@ -1,55 +1,40 @@
-﻿<Window x:Class="DrawingShapes.MainWindow"
+﻿<Window x:Class="ScribblePad.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:ScribblePad"
         Title="ScribblePad" Height="350" Width="525" Background="Transparent" WindowState="Maximized" KeyDown="OnKeyDown">
+    <Window.CommandBindings>
+        <CommandBinding Command="{x:Static local:Commands.Redo}" CanExecute="CanExecute_Redo"/>
+        <CommandBinding Command="{x:Static local:Commands.Undo}" CanExecute="CanExecute_Undo"/>
+    </Window.CommandBindings>
     <StackPanel VerticalAlignment="Top" Height="92" >
         <Menu Height="20">
             <MenuItem Header="File">
-                <MenuItem Header="New" Click="OnNew"/>
-                <MenuItem Header="Open" Click="OnOpen"/>
-                <MenuItem Header="Save" Click="OnSave"/>
+                <MenuItem Header="New" Click="OnNew" InputGestureText="Ctrl+N"/>
+                <MenuItem Header="Open" Click="OnOpen" InputGestureText="Ctrl+O"/>
+                <MenuItem Header="Save" Click="OnSave" InputGestureText="Ctrl+S"/>
                 <MenuItem Header="SaveAs" Click="OnSaveAs"/>
-                <MenuItem Header="Exit" Click="OnExit"/>
+                <MenuItem Header="Exit" Click="OnExit" InputGestureText="Alt+F4"/>
             </MenuItem>
         </Menu>
-        <ToolBar x:Name="mToolBar" Height="35" Header="Tools">
-            <ToggleButton Click="OnScribble" ToolTip="Pen" >
-                <Image Source="Images/pen.png"/>
-            </ToggleButton>
-            <Separator/>
-            <ToggleButton Click="OnErase" ToolTip="Erase a part of the drawing and replaces with the background color">
-                <Image Source="Images/eraser.png"/>
-            </ToggleButton>
-            <Separator/>
-            <Button Click="OnColorChange" ToolTip="Change the color of the drawing">
-                <Image Source="Images/color.png"/>
+        <ToolBar x:Name="mToolBar" Height="35">
+            <Button x:Name="mUndo" Click="OnUndo" ToolTip="Undo last action" Command="{x:Static local:Commands.Undo}">
+                <Image x:Name="mUI" Source="Images/undo.png" Opacity="0.2"/>
             </Button>
             <Separator/>
-            <Button x:Name="mUndo" Click="OnUnDo" ToolTip="Undo last action">
-                <Image x:Name="mUI" Source="Images/undo.png"/>
+            <Button x:Name="mRedo" Click="OnRedo" ToolTip="Redo last action" Command="{x:Static local:Commands.Redo}">
+                <Image x:Name="mRI" Source="Images/redo.png" Opacity="0.2"/>
             </Button>
             <Separator/>
-            <Button x:Name="mRedo" Click="OnReDo" ToolTip="Redo last action">
-                <Image x:Name="mRI" Source="Images/redo.png"/>
-            </Button>
-            <Label Content="Shapes" Width="54" Margin="30,0,0,0"/>
-            <ToggleButton Click="OnLine" ToolTip="Line">
+            <ToggleButton ToolTip="Line" Click="OnModeChanged">
                 <Image Source="Images/line.png"/>
             </ToggleButton>
             <Separator/>
-            <ToggleButton Click="OnConnectedLine" ToolTip="Connected Lines">
-                <Image Source="Images/connectedline.png"/>
-            </ToggleButton>
-            <Separator/>
-            <ToggleButton Click="OnEllipse" ToolTip="Ellipse">
-                <Image Source="Images/ellipse.png"/>
-            </ToggleButton>
-            <Separator/>
-            <ToggleButton Click="OnRect" ToolTip="Rectangle">
+            <ToggleButton ToolTip="Rectangle" Click="OnModeChanged">
                 <Image Source="Images/rectangle.png"/>
             </ToggleButton>
             <Separator/>
-            <ToggleButton Click="OnCircle" ToolTip="Circle">
+            <ToggleButton ToolTip="Circle" Click="OnModeChanged">
                 <Image Source="Images/circle.png"/>
             </ToggleButton>
         </ToolBar>

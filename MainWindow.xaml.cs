@@ -7,341 +7,205 @@
 // To design scribble pad
 // ----------------------------------------------------------------------------------------
 
-using System.Collections.Generic;
-using System.IO;
+using System.ComponentModel;
 using System.Linq;
 using System.Windows;
-using System.Windows.Forms;
-using System.Windows.Media;
-using System.Windows.Input;
-using System.ComponentModel;
-using MouseEventArgs = System.Windows.Input.MouseEventArgs;
-using MessageBox = System.Windows.Forms.MessageBox;
 using System.Windows.Controls.Primitives;
+using System.Windows.Input;
+using System.Windows.Media;
+using Data;
+using Frontend;
+using Point = Data.Point;
 
-namespace DrawingShapes {
-   #region MainWindow ---------------------------------------------------------------------------------------- 
-   public partial class MainWindow : Window {
-      public MainWindow () {
-         InitializeComponent ();
-         MouseDown += OnMouseDown;
-         MouseMove += OnMouseMove;
-         EnableChanged (Tools.ReDo, false);    // Initially sets the 'IsEnabled' property of button
-         EnableChanged (Tools.UnDo, false);    // and image opacity
-      }
-
-      #region Tools ----------------------------------------
-      /// <summary>Click event for color change button</summary>
-      /// <param name="sender"></param>
-      /// <param name="e"></param>
-      void OnColorChange (object sender, RoutedEventArgs e) {
-         ColorDialog dialog = new ();
-         if (dialog.ShowDialog () == System.Windows.Forms.DialogResult.OK)
-            mPen.Brush = new SolidColorBrush (Color.FromArgb (dialog.Color.A, dialog.Color.R, dialog.Color.G, dialog.Color.B));  // Gets the ARGB bytes from the color selected
-      }
-
-      /// <summary>Click event for erase button</summary>
-      /// <param name="sender"></param>
-      /// <param name="e"></param>
-      void OnErase (object sender, RoutedEventArgs e) { mSelectedShape = Shapes.Eraser; ToolChanged (sender); }
-
-      /// <summary>Click event for redo button</summary>
-      /// <param name="sender"></param>
-      /// <param name="e"></param>
-      void OnReDo (object sender, RoutedEventArgs e) {
-         if (mStack.Count > 0) {
-            mShapes.Add (mStack.Pop ());
-            mCount = mShapes.Count;
-            if (mCount > 0) EnableChanged (Tools.UnDo, true);
-            if (mStack.Count == 0) EnableChanged (Tools.ReDo, false);
-            InvalidateVisual ();
-         }
-      }
-
-      /// <summary>Click event for undo button</summary>
-      /// <param name="sender"></param>
-      /// <param name="e"></param>
-      void OnUnDo (object sender, RoutedEventArgs e) {
-         if (mShapes.Count > 0) {
-            mStack.Push (mShapes.Last ());
-            EnableChanged (Tools.ReDo, true);
-            mShapes.Remove (mShapes.Last ());
-            mCount = mShapes.Count;
-            if (mCount == 0) EnableChanged (Tools.UnDo, false);
-            InvalidateVisual ();
-         }
-      }
-
-      // Changes the 'IsEnabled' property of undo and redo buttons
-      void EnableChanged (Tools tool, bool IsEnabled) {
-         if (tool == Tools.ReDo)
-            if (IsEnabled) { mRedo.IsEnabled = true; mRI.Opacity = 1; } else { mRedo.IsEnabled = false; mRI.Opacity = 0.2; }
-         if (tool == Tools.UnDo)
-            if (IsEnabled) { mUndo.IsEnabled = true; mUI.Opacity = 1; } else { mUndo.IsEnabled = false; mUI.Opacity = 0.2; }
-      }
-
-      /// <summary>Click event for pen button</summary>
-      /// <param name="sender"></param>
-      /// <param name="e"></param>
-      void OnScribble (object sender, RoutedEventArgs e) { mSelectedShape = Shapes.Scribble; ToolChanged (sender); }
-
-      // Unchecks the toggle buttons after changing tool
-      void ToolChanged (object sender) {
-         foreach (var control in mToolBar.Items)
-            if (control is ToggleButton tb && sender is ToggleButton clicked_tb) {
-               if (tb == clicked_tb) tb.IsChecked = true;
-               else tb.IsChecked = false;
-            }
-      }
-      #endregion
-
-      #region Shapes ----------------------------------------
-      /// <summary>Click event for circle button</summary>
-      /// <param name="sender"></param>
-      /// <param name="e"></param>
-      void OnCircle (object sender, RoutedEventArgs e) { mSelectedShape = Shapes.Circle; ToolChanged (sender); }
-
-      void OnConnectedLine (object sender, RoutedEventArgs e) { mSelectedShape = Shapes.ConnectedLine; ToolChanged (sender); }
-
-      /// <summary>Click event for ellipse button</summary>
-      /// <param name="sender"></param>
-      /// <param name="e"></param>
-      void OnEllipse (object sender, RoutedEventArgs e) { mSelectedShape = Shapes.Ellipse; ToolChanged (sender); }
-
-      /// <summary>Click event for line button</summary>
-      /// <param name="sender"></param>
-      /// <param name="e"></param>
-      void OnLine (object sender, RoutedEventArgs e) { mSelectedShape = Shapes.Line; ToolChanged (sender); }
-
-      /// <summary>Click event for rectangle button</summary>
-      /// <param name="sender"></param>
-      /// <param name="e"></param>
-      void OnRect (object sender, RoutedEventArgs e) { mSelectedShape = Shapes.Rectangle; ToolChanged (sender); }
-      #endregion
-
-      #region Mouse Events ----------------------------------------
-      /// <summary>Event handler for mouse down event</summary>
-      /// <param name="sender"></param>
-      /// <param name="e"></param>
-      void OnMouseDown (object sender, MouseButtonEventArgs e) {
-         if (e.RightButton == MouseButtonState.Released) {
-            if (mCurrentShape is ConnectedLine) { UpdateShape (e); mCurrentShape.AddLines (mEndPoint); } else {
-               if (IsDrawing) AddToList (e);
-               else if (mSelectedShape != Shapes.None) {
-                  mStartPoint = e.GetPosition (this);
-                  switch (mSelectedShape) {
-                     case Shapes.Rectangle:
-                        mCurrentShape = new Rectangle (mStartPoint);
-                        break;
-                     case Shapes.Ellipse:
-                        mCurrentShape = new Ellipse (mStartPoint);
-                        break;
-                     case Shapes.Circle:
-                        mCurrentShape = new Circle (mStartPoint);
-                        break;
-                     case Shapes.Line:
-                        mCurrentShape = new CustomLine (mStartPoint);
-                        break;
-                     case Shapes.Scribble:
-                        mCurrentShape = new Scribble (mStartPoint);
-                        break;
-                     case Shapes.Eraser:
-                        mCurrentShape = new Eraser (mStartPoint);
-                        break;
-                     case Shapes.ConnectedLine:
-                        mCurrentShape = new ConnectedLine (mStartPoint);
-                        break;
-                     default: break;
-                  }
-                  IsDrawing = true;
-               }
-            }
-         }
-      }
-
-      // Routine to get end point and update the shape
-      void UpdateShape (MouseEventArgs e) {
-         mEndPoint = e.GetPosition (this);
-         mCurrentShape.Update (mEndPoint);
-      }
-
-      // Adds the shapes to the list
-      void AddToList (MouseEventArgs e) { UpdateShape (e); AddShapes (); }
-
-      /// <summary>Event handler for mouse move event</summary>
-      /// <param name="sender"></param>
-      /// <param name="e"></param>
-      void OnMouseMove (object sender, MouseEventArgs e) {
-         if (IsDrawing) { UpdateShape (e); InvalidateVisual (); }
-      }
-
-      #endregion
-
-      #region Menu Items ----------------------------------------
-      /// <summary>Click event for exit menu item</summary>
-      /// <param name="sender"></param>
-      /// <param name="e"></param>
-      void OnExit (object sender, RoutedEventArgs e) {
-         if (!IsSaved && mShapes.Count != 0) {
-            Prompt (sender, e);
-            if (!IsCancelled) Close ();
-         } else Close ();
-      }
-
-      /// <summary>Click event of new menu item</summary>
-      /// <param name="sender"></param>
-      /// <param name="e"></param>
-      void OnNew (object sender, RoutedEventArgs e) {
-         if (IsSaved) {
-            mShapes.Clear ();
-            IsSaved = false;
-            InvalidateVisual ();
-         } else if (mShapes.Count != 0) Prompt (sender, e);
-      }
-
-      // Prompts the user to save the drawing
-      void Prompt (object sender, RoutedEventArgs e) {
-         IsCancelled = false;
-         DialogResult dr = MessageBox.Show ("Do you want to save changes to Untitled?", "ScribblePad", MessageBoxButtons.YesNoCancel);
-         switch (dr) {
-            case System.Windows.Forms.DialogResult.Yes:
-               OnSaveAs (sender, e);    // Triggering save event if pressed 'yes'
-               break;
-            case System.Windows.Forms.DialogResult.No:
-               IsSaved = false;
-               mShapes.Clear ();    // Clearing the drawing if pressed 'no'
-               InvalidateVisual ();
-               break;
-            case System.Windows.Forms.DialogResult.Cancel:
-               IsCancelled = true;
-               return;
-         }
-      }
-
-      /// <summary>Click event of open menu item</summary>
-      /// <param name="sender"></param>
-      /// <param name="e"></param>
-      void OnOpen (object sender, RoutedEventArgs e) {
-         OpenFileDialog dlgBox = new ();
-         dlgBox.Title = "Select a file";
-         dlgBox.Filter = "Binary File|*.bin";
-         if (dlgBox.ShowDialog () == System.Windows.Forms.DialogResult.OK) {
-            if (mShapes.Count != 0 && !IsSaved) Prompt (sender, e);
-            if (IsSaved) { mShapes.Clear (); InvalidateVisual (); }
-            if (!IsCancelled)
-               using (BinaryReader reader = new (File.Open (dlgBox.FileName, FileMode.Open))) {
-                  IsSaved = true;
-                  pathToFile = dlgBox.FileName;
-                  int totalCount = reader.ReadInt32 ();
-                  for (int i = 0; i < totalCount; i++) {
-                     byte a = reader.ReadByte (); byte b = reader.ReadByte (); byte r = reader.ReadByte (); byte g = reader.ReadByte ();
-                     var brush = new SolidColorBrush (Color.FromArgb (a, r, g, b));
-                     switch (reader.ReadInt32 ()) { // Reads the file based on the shape (0- rectangle, 1- ellipse, 2- circle, 3- line, 4- scribble, 5- eraser, 6-connected lines)
-                        case 0: Read (reader, new Rectangle ()); break;
-                        case 1: Read (reader, new Ellipse ()); break;
-                        case 2: Read (reader, new Circle ()); break;
-                        case 3: Read (reader, new CustomLine ()); break;
-                        case 4: Read (reader, new Scribble ()); break;
-                        case 5: Read (reader, new Eraser ()); break;
-                        case 6: Read (reader, new ConnectedLine ()); break;
-                     }
-
-                     void Read (BinaryReader reader, Shape shape) {    // Routine to read the shapes
-                        shape.Open (reader);
-                        mShapes.Add ((shape, brush));
-                        InvalidateVisual ();
-                     }
-                  }
-               }
-         }
-      }
-
-      /// <summary>Click event for save menu item</summary>
-      /// <param name="sender"></param>
-      /// <param name="e"></param>
-      void OnSave (object sender, RoutedEventArgs e) => OnSaveAs (null, e);
-
-      /// <summary>Click event for save as menu item</summary>
-      /// <param name="sender"></param>
-      /// <param name="e"></param>
-      void OnSaveAs (object sender, RoutedEventArgs e) {
-         SaveFileDialog dlgBox = new ();
-         dlgBox.FileName = "Untitled";
-         dlgBox.Filter = "Binary File|*.bin";
-         DialogResult dr;
-         if (IsSaved && sender == null) {
-            dr = System.Windows.Forms.DialogResult.OK;
-            dlgBox.FileName = pathToFile;
-         } else dr = dlgBox.ShowDialog ();
-         if (dr == System.Windows.Forms.DialogResult.OK) {
-            IsSaved = true;
-            pathToFile = dlgBox.FileName;
-            using (BinaryWriter writer = new (File.Open (dlgBox.FileName, FileMode.Create))) {
-               writer.Write (mShapes.Count); // Total number of shapes
-               foreach (var shape in mShapes) {
-                  var brush = shape.brush;
-                  var color = ((SolidColorBrush)brush).Color;
-                  byte a = color.A; byte b = color.B; byte r = color.R; byte g = color.G; // Gets the ABRG values of the color
-                  writer.Write (a); writer.Write (b); writer.Write (r); writer.Write (g);
-                  shape.shape.Save (writer);
-               }
-            }
-         }
-      }
-      #endregion
-
-      /// <summary>Event handler for escape key press</summary>
-      /// <param name="sender"></param>
-      /// <param name="e"></param>
-      void OnKeyDown (object sender, System.Windows.Input.KeyEventArgs e) {
-         if (mCurrentShape != null && e.Key == Key.Escape) { mCurrentShape.AddLines (mEndPoint); AddShapes (); }
-      }
-
-      // Routine to add shapes to the list
-      void AddShapes () {
-         var brush = mPen.Brush;
-         mShapes.Add ((mCurrentShape, brush));
-         if (mCount != mShapes.Count) { mStack.Clear (); EnableChanged (Tools.ReDo, false); }
-         EnableChanged (Tools.UnDo, true);
-         mCurrentShape = null;
-         IsDrawing = false;
-         InvalidateVisual ();
-      }
-
-      /// <summary>Overriding on-closing method of main window</summary>
-      /// <param name="e"></param>
-      protected override void OnClosing (CancelEventArgs e) {
-         if (!IsSaved && mShapes.Count != 0) {
-            Prompt (null, null);
-            if (!IsCancelled) base.OnClosing (e); else e.Cancel = true;
-         } else base.OnClosing (e);
-      }
-
-      /// <summary>Overriding on-render method</summary>
-      /// <param name="dc"></param>
-      protected override void OnRender (DrawingContext dc) {
-         base.OnRender (dc);
-         foreach (var shape in mShapes)
-            shape.shape.Draw (dc, shape.brush);
-         if (IsDrawing && mCurrentShape != null)
-            mCurrentShape.Draw (dc, mPen.Brush);
-      }
-
-      #region Private data ------------------------------------------
-      List<(Shape shape, Brush brush)> mShapes = new ();    // Collection of Shapes and their corresponding color
-      Stack<(Shape, Brush)> mStack = new ();    // Used for undo and redo operations
-      Pen mPen = new (Brushes.White, 2);
-      Point mStartPoint, mEndPoint;
-      Shape mCurrentShape;         // Shape which is being rendered
-      bool IsSaved = false;        // Keeps track whether the drawing is saved or not
-      bool IsDrawing = false;      // Holds the mouse state
-      bool IsCancelled = false;    // True, if user clicks 'cancel' to save the drawing
-      string pathToFile;           // Path of the saved file
-      int mCount;                  // Holds count of the shapes after undo operation
-      Shapes mSelectedShape;    // To prevent having default shape as rectangle
-      enum Tools { UnDo, ReDo }
-      enum Shapes { None, Rectangle, Ellipse, Line, Circle, Scribble, Eraser, ConnectedLine }
-      #endregion
+namespace ScribblePad;
+public partial class MainWindow : Window {
+   #region Constructor ------------------------------------------------------------
+   public MainWindow () {
+      InitializeComponent ();
+      MouseDown += OnMouseDown;
+      MouseMove += OnMouseMove;
+      mDocManager = new DocManager (this);
    }
    #endregion
+
+   #region Implementation ---------------------------------------------------------
+   #region Tools ------------------------------------------------------------------
+   /// <summary>Click event for redo button</summary>
+   /// <param name="sender"></param>
+   /// <param name="e"></param>
+   void OnRedo (object sender, RoutedEventArgs e) {
+      if (Events.mStack.Count > 0) {
+         Events.ShapesList.Add (Events.mStack.Pop ());
+         mCount = Events.ShapesList.Count;
+         if (mCount > 0) mUI.Opacity = 1;
+         if (Events.mStack.Count == 0) mRI.Opacity = 0.2;
+         InvalidateVisual ();
+      }
+   }
+
+   /// <summary>Click event for undo button</summary>
+   /// <param name="sender"></param>
+   /// <param name="e"></param>
+   void OnUndo (object sender, RoutedEventArgs e) {
+      if (Events.ShapesList.Count > 0) {
+         Events.mStack.Push (Events.ShapesList.Last ());
+         Events.ShapesList.Remove (Events.ShapesList.Last ());
+         mCount = Events.ShapesList.Count;
+         if (mCount == 0) mUI.Opacity = 0.2;
+         InvalidateVisual ();
+      }
+   }
+
+   /// <summary>Determines whether the redo command is executable</summary>
+   /// <param name="sender"></param>
+   /// <param name="e"></param>
+   void CanExecute_Redo (object sender, CanExecuteRoutedEventArgs e) {
+      e.CanExecute = Events.mStack.Count > 0;
+      if (e.CanExecute) mRI.Opacity = 1;
+   }
+
+   /// <summary>Determines whether the undo command is executable</summary>
+   /// <param name="sender"></param>
+   /// <param name="e"></param>
+   void CanExecute_Undo (object sender, CanExecuteRoutedEventArgs e) {
+      e.CanExecute = Events.ShapesList.Count > 0;
+      if (e.CanExecute) mUI.Opacity = 1;
+   }
+
+   /// <summary>Event handler for shape buttons</summary>
+   /// <param name="sender"></param>
+   /// <param name="args"></param>
+   void OnModeChanged (object sender, RoutedEventArgs args) {
+      foreach (var control in mToolBar.Items) {
+         if (control is ToggleButton tb && sender is ToggleButton clicked_tb) {
+            if (tb == clicked_tb) {
+               tb.IsChecked = true;
+               switch (tb.ToolTip) {
+                  case "Line": Events.Shape = Events.EShapes.Line; break;
+                  case "Rectangle": Events.Shape = Events.EShapes.Rectangle; break;
+                  case "Circle": Events.Shape = Events.EShapes.Circle; break;
+               }
+            } else tb.IsChecked = false;
+         }
+      }
+   }
+
+   /// <summary>Event handler for escape key press</summary>
+   /// <param name="sender"></param>
+   /// <param name="e"></param>
+   void OnKeyDown (object sender, KeyEventArgs e) {
+      if (Keyboard.Modifiers == ModifierKeys.Alt && e.Key == Key.D4) OnExit (sender, e);
+      if (Keyboard.Modifiers == ModifierKeys.Control) {
+         switch (e.Key) {
+            case Key.N: OnNew (sender, e); break;
+            case Key.O: OnOpen (sender, e); break;
+            case Key.S: OnSave (sender, e); break;
+            case Key.Z: OnUndo(sender, e); break;
+            case Key.Y: OnRedo (sender, e); break;
+            default: break;
+         }
+      }
+   }
+   #endregion
+
+   #region Mouse Events -----------------------------------------------------------
+   /// <summary>Event handler for mouse down event</summary>
+   /// <param name="sender"></param>
+   /// <param name="e"></param>
+   void OnMouseDown (object sender, MouseButtonEventArgs e) {
+      if (e.RightButton == MouseButtonState.Released) {
+         if (mIsDrawing) {
+            mEndPoint.X = e.GetPosition (this).X; mEndPoint.Y = e.GetPosition (this).Y;
+            Events.MouseMove (mEndPoint);
+            AddShapes ();
+         } else if (Events.Shape != Events.EShapes.None) {
+            mStartPoint.X = e.GetPosition (this).X; mStartPoint.Y = e.GetPosition (this).Y;
+            Events.MouseDown (mStartPoint);
+            mIsDrawing = true;
+         }
+      }
+   }
+
+   // Routine to add shapes to the list
+   void AddShapes () {
+      Events.ShapesList.Add (Events.CurrentShape);
+      if (mCount != Events.ShapesList.Count) { Events.mStack.Clear (); mRI.Opacity = 0.2; }
+      mUI.Opacity = 1;
+      Events.CurrentShape = null;
+      mIsDrawing = false;
+      InvalidateVisual ();
+   }
+
+   /// <summary>Event handler for mouse move event</summary>
+   /// <param name="sender"></param>
+   /// <param name="e"></param>
+   void OnMouseMove (object sender, MouseEventArgs e) {
+      if (mIsDrawing) {
+         mEndPoint.X = e.GetPosition (this).X; mEndPoint.Y = e.GetPosition (this).Y;
+         Events.MouseMove (mEndPoint);
+         InvalidateVisual ();
+      }
+   }
+   #endregion
+
+   #region Menu Items -------------------------------------------------------------
+   /// <summary>Click event for exit menu item</summary>
+   /// <param name="sender"></param>
+   /// <param name="e"></param>
+   void OnExit (object sender, RoutedEventArgs e) => mDocManager.Exit (sender, e);
+
+   /// <summary>Click event of new menu item</summary>
+   /// <param name="sender"></param>
+   /// <param name="e"></param>
+   void OnNew (object sender, RoutedEventArgs e) => mDocManager.New (sender, e);
+
+   /// <summary>Click event of open menu item</summary>
+   /// <param name="sender"></param>
+   /// <param name="e"></param>
+   void OnOpen (object sender, RoutedEventArgs e) => mDocManager.Load (sender, e);
+
+   /// <summary>Click event for save menu item</summary>
+   /// <param name="sender"></param>
+   /// <param name="e"></param>
+   void OnSave (object sender, RoutedEventArgs e) => mDocManager.SaveAs (null);
+
+   /// <summary>Click event for save as menu item</summary>
+   /// <param name="sender"></param>
+   /// <param name="e"></param>
+   void OnSaveAs (object sender, RoutedEventArgs e) => mDocManager.SaveAs (sender);
+   #endregion
+
+   /// <summary>Overriding on-closing method of main window</summary>
+   /// <param name="e"></param>
+   protected override void OnClosing (CancelEventArgs e) {
+      if (mDocManager.IsModified) {
+         mDocManager.Prompt (null, null);
+         if (!mDocManager.IsCancelled) base.OnClosing (e); else e.Cancel = true;
+      } else base.OnClosing (e);
+   }
+
+   /// <summary>Overriding on-render method</summary>
+   /// <param name="dc"></param>
+   protected override void OnRender (DrawingContext dc) {
+      base.OnRender (dc);
+      foreach (var shape in Events.ShapesList) DrawingShapes.Draw (dc, shape);
+      if (Events.CurrentShape != null && mIsDrawing) DrawingShapes.Draw (dc, Events.CurrentShape);
+   }
+   #endregion
+
+   #region Properties -------------------------------------------------------------
+   public Point mStartPoint, mEndPoint;    // Holds the points captured by mouse events
+   #endregion
+
+   #region Private data -----------------------------------------------------------
+   DocManager mDocManager;
+   bool mIsDrawing = false;    // Holds the drawing state
+   int mCount;    // Holds count of the shapes after undo operation
+   #endregion
+}
+
+/// <summary>Implements RoutedCommand class from ICommand interface</summary>
+public static class Commands {
+   public static readonly RoutedCommand Undo = new ();
+   public static readonly RoutedCommand Redo = new ();
 }
