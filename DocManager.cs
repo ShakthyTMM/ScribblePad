@@ -1,5 +1,6 @@
 ﻿using Data;
 using ScribblePad;
+using System.Collections.Generic;
 using System.IO;
 using System.Windows;
 using System.Windows.Forms;
@@ -8,12 +9,15 @@ using MessageBox = System.Windows.Forms.MessageBox;
 namespace Frontend;
 public class DocManager {
    #region Constructor -----------------------------------------------------------
-   public DocManager (MainWindow eventSource) { mEventSource = eventSource; }
+   public DocManager () { }
+   public DocManager (Document document, MainWindow eventSource, string fileName) {
+      mDocument = document; mEventSource = eventSource;
+   }
    #endregion
 
    #region Methods ---------------------------------------------------------------
    public void Exit (object sender, RoutedEventArgs e) {    // Exit event's routine
-      if (IsSaved) {
+      if (IsModified) {
          Prompt (sender, e);
          if (!IsCancelled) mEventSource.Close ();
       } else mEventSource.Close ();
@@ -25,24 +29,22 @@ public class DocManager {
          Filter = "Binary File|*.bin"
       };
       if (dlgBox.ShowDialog () == DialogResult.OK) {
-         if (IsModified) Prompt (sender, e);
-         if (IsSaved) { Events.ShapesList.Clear (); mEventSource.InvalidateVisual (); }
+         if (IsModified) Prompt (sender, e); else ClearScreen ();
          if (!IsCancelled)
             using (BinaryReader reader = new (File.Open (dlgBox.FileName, FileMode.Open))) {
-               IsSaved = true;
+               mIsSaved = true;
                mPathToFile = dlgBox.FileName;
                int totalCount = reader.ReadInt32 ();
                for (int i = 0; i < totalCount; i++) {
-                  switch (reader.ReadInt32 ()) {    // Reads the file based on the shape (1- rectangle, 2- circle, 3- line)
-                     case 1: Read (reader, new Rectangle ()); break;
-                     case 2: Read (reader, new Line ()); break;
-                     case 3: Read (reader, new Circle ()); break;
-
+                  switch (reader.ReadInt32 ()) {    // Reads the file based on the shape (0 - rectangle, 1 - line, 2 - circle)
+                     case 0: Read (reader, new Rectangle ()); break;
+                     case 1: Read (reader, new Line ()); break;
+                     case 2: Read (reader, new Circle ()); break;
                   }
 
                   void Read (BinaryReader reader, Shape shape) {    // Routine to read the shapes
                      shape.Open (reader);
-                     Events.ShapesList.Add (shape);
+                     mDocument.ShapesList.Add (shape);
                      mEventSource.InvalidateVisual ();
                   }
                }
@@ -56,20 +58,19 @@ public class DocManager {
       DialogResult dr = MessageBox.Show ("Do you want to save changes to Untitled?", "ScribblePad", MessageBoxButtons.YesNoCancel);
       switch (dr) {
          case DialogResult.Yes: SaveAs (sender); break;   // Triggering save event if pressed 'yes'
-         case DialogResult.No:
-            IsSaved = false; Events.ShapesList.Clear ();    // Clearing the drawing if pressed 'no'
-            mEventSource.InvalidateVisual ();
-            break;
+         case DialogResult.No: ClearScreen (); break;   // Clearing the drawing if pressed 'no'
          case DialogResult.Cancel: IsCancelled = true; return;
       }
    }
 
    public void New (object sender, RoutedEventArgs e) {    // New event's routine
-      if (!IsModified) {
-         Events.ShapesList.Clear ();
-         IsSaved = false;
-         mEventSource.InvalidateVisual ();
-      } else Prompt (sender, e);
+      if (!IsModified) ClearScreen (); else Prompt (sender, e);
+   }
+
+   void ClearScreen () {
+      mDocument.ShapesList.Clear (); mDocument.Stack.Clear ();
+      mIsSaved = false; mEventSource.mUI.Opacity = 0.2; mEventSource.mRI.Opacity = 0.2;
+      mEventSource.InvalidateVisual ();
    }
 
    public void SaveAs (object sender) {    // Save As event's routine
@@ -78,27 +79,29 @@ public class DocManager {
          Filter = "Binary File|*.bin"
       };
       DialogResult dr;
-      if (IsSaved && sender == null) {
+      if (!mIsSaved && sender == null) {
          dr = DialogResult.OK;
          dlgBox.FileName = mPathToFile;
       } else dr = dlgBox.ShowDialog ();
       if (dr == DialogResult.OK) {
-         IsSaved = true;
+         mIsSaved = true;
          mPathToFile = dlgBox.FileName;
          using BinaryWriter writer = new (File.Open (dlgBox.FileName, FileMode.Create));
-         writer.Write (Events.ShapesList.Count); // Total number of shapes
-         foreach (var shape in Events.ShapesList) shape.Save (writer);
+         writer.Write (mDocument.ShapesList.Count); // Total number of shapes
+         foreach (var shape in mDocument.ShapesList) shape.Save (writer);
       }
    }
    #endregion
 
    #region Properties and fields -------------------------------------------------
-   public bool IsModified => !IsSaved && Events.ShapesList.Count != 0;    // Checks whether the file is modified
-   public bool IsSaved, IsCancelled = false;    // IsSaved checks if the file is saved and IsCancelled holds the state whether user cancelled the prompt
+   public bool IsModified => mDocument.ShapesList.Count > 0 && !mIsSaved;    // Checks whether the file is modified
+   public bool mIsSaved = false;       // IsSaved checks if the file is saved and
+   public bool IsCancelled = false;    // IsCancelled holds the state whether user cancelled the prompt
    #endregion
 
-   #region Private fields --------------------------------------------------------
+   #region Private Data ----------------------------------------------------------
+   Document mDocument = new ();
    string mPathToFile;    // Holds the path of the file saved
-   readonly MainWindow mEventSource;
+   MainWindow mEventSource;
    #endregion
 }

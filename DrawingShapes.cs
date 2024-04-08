@@ -5,34 +5,30 @@ using Point = System.Windows.Point;
 
 namespace Frontend;
 public static class DrawingShapes {    // Draws the shapes
-   #region Implementation -----------------------------------------------------------------
-   /// <summary>Draws the shape</summary>
-   /// <param name="dc"></param>
-   /// <param name="shape">Shape to be drawn</param>
-   public static void Draw (DrawingContext dc, Shape shape) {
+   #region Methods -----------------------------------------------------------------
+   public static void Draw (DrawingContext dc, Shape shape, Pen pen) {
       sStartPoint = new (shape.StartPoint.X, shape.StartPoint.Y);
       sEndPoint = new (shape.EndPoint.X, shape.EndPoint.Y);
       switch (shape) {
-         case Rectangle: DrawRectangle (dc); break;
-         case Circle: DrawCircle (dc, (Circle)shape); break;
-         case Line: DrawLine (dc); break;
+         case Rectangle: DrawRectangle (dc, pen); break;
+         case Circle: DrawCircle (dc, (Circle)shape, pen); break;
+         case Line: DrawLine (dc, pen); break;
       }
    }
 
-   static void DrawRectangle (DrawingContext dc) {
-      Rect rect = new (sStartPoint,sEndPoint);
-      dc.DrawRectangle (null,sPen, rect);
+   static void DrawRectangle (DrawingContext dc, Pen pen) {
+      Rect rect = new (sStartPoint, sEndPoint);
+      dc.DrawRectangle (null, pen, rect);
    }
 
-   static void DrawCircle (DrawingContext dc, Circle shape) =>
-      dc.DrawEllipse (null,sPen, sStartPoint, shape.Radius, shape.Radius);
+   static void DrawCircle (DrawingContext dc, Circle shape, Pen pen) =>
+      dc.DrawEllipse (null, pen, sStartPoint, shape.Radius, shape.Radius);
 
-   static void DrawLine (DrawingContext dc) => dc.DrawLine (sPen, sStartPoint, sEndPoint);
+   static void DrawLine (DrawingContext dc, Pen pen) => dc.DrawLine (pen, sStartPoint, sEndPoint);
    #endregion
 
    #region Private data ------------------------------------------------------------------------
    static Point sStartPoint, sEndPoint;
-   static Pen sPen = new (Brushes.White, 2);
    #endregion
 }
 

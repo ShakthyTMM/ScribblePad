@@ -7,6 +7,18 @@
         <CommandBinding Command="{x:Static local:Commands.Redo}" CanExecute="CanExecute_Redo"/>
         <CommandBinding Command="{x:Static local:Commands.Undo}" CanExecute="CanExecute_Undo"/>
     </Window.CommandBindings>
+    <Window.Resources>
+        <Style TargetType="ToggleButton">
+            <Setter Property="Background" Value="LightGray"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Margin" Value="10,0,0,0"/>
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="Background" Value="LightGray"/>
+            <Setter Property="BorderBrush" Value="LightGray"/>
+            <Setter Property="Margin" Value="10,0,0,0"/>
+        </Style>
+    </Window.Resources>
     <StackPanel VerticalAlignment="Top" Height="92" >
         <Menu Height="20">
             <MenuItem Header="File">
@@ -17,15 +29,10 @@
                 <MenuItem Header="Exit" Click="OnExit" InputGestureText="Alt+F4"/>
             </MenuItem>
         </Menu>
-        <ToolBar x:Name="mToolBar" Height="35">
-            <Button x:Name="mUndo" Click="OnUndo" ToolTip="Undo last action" Command="{x:Static local:Commands.Undo}">
-                <Image x:Name="mUI" Source="Images/undo.png" Opacity="0.2"/>
-            </Button>
-            <Separator/>
-            <Button x:Name="mRedo" Click="OnRedo" ToolTip="Redo last action" Command="{x:Static local:Commands.Redo}">
-                <Image x:Name="mRI" Source="Images/redo.png" Opacity="0.2"/>
-            </Button>
-            <Separator/>
+        <WrapPanel x:Name="mWP" Height="35" Background="LightGray">
+            <ToggleButton Click="OnSelect">
+                <Image Source="Images/pick.png"/>
+            </ToggleButton>
             <ToggleButton ToolTip="Line" Click="OnModeChanged">
                 <Image Source="Images/line.png"/>
             </ToggleButton>
@@ -37,6 +44,17 @@
             <ToggleButton ToolTip="Circle" Click="OnModeChanged">
                 <Image Source="Images/circle.png"/>
             </ToggleButton>
-        </ToolBar>
+            <Button x:Name="mUndo"  Click="OnUndo" ToolTip="Undo last action" Command="{x:Static local:Commands.Undo}">
+                <Image x:Name="mUI" Source="Images/undo.png" Opacity="0.2"/>
+            </Button>
+            <Separator/>
+            <Button x:Name="mRedo" Click="OnRedo" ToolTip="Redo last action" Command="{x:Static local:Commands.Redo}">
+                <Image x:Name="mRI" Source="Images/redo.png" Opacity="0.2"/>
+            </Button>
+            <Separator/>
+            <ToggleButton x:Name="del">
+                <Image Source="Images/delete.png" Height="25" Width="25"/>
+            </ToggleButton>
+        </WrapPanel>
     </StackPanel>
 </Window>
