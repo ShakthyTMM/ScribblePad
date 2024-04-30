@@ -6,125 +6,132 @@
 // Scribble Pad
 // To design scribble pad
 // ----------------------------------------------------------------------------------------
+using CADMaster.UI.Widgets;
 using System.ComponentModel;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
-using System.Windows.Media;
-using Data;
-using Frontend;
 
-namespace ScribblePad;
+namespace CAD;
+
+#region Class MainWindow ----------------------------------------------------------
 public partial class MainWindow : Window {
    #region Constructor ------------------------------------------------------------
    public MainWindow () {
       InitializeComponent ();
-      mDocument = new Document (this);
+      mDocManager = new (mCanvas);
+      Title = SetTitle;
    }
    #endregion
 
    #region Implementation ---------------------------------------------------------
    #region Tools ------------------------------------------------------------------
-   /// <summary>Click event for redo button</summary>
-   /// <param name="sender"></param>
-   /// <param name="e"></param>
-   void OnRedo (object sender, RoutedEventArgs e) => mDocument.Redo ();
+   void OnModeChange (object sender, RoutedEventArgs e) {
+      mWidget?.Detach ();
+      foreach (var control in mWP.Children) {
+         if (control is ToggleButton tb && sender is ToggleButton clicked_tb) {
+            if (tb == clicked_tb) {
+               tb.IsChecked = true;
+               switch (clicked_tb.ToolTip) {
+                  case "Line": mWidget = new Line (mCanvas); break;
+                  case "Rectangle": mWidget = new Rectangle (mCanvas); break;
+                  case "Circle": mWidget = new Circle (mCanvas); break;
+                  case "ConnectedLine": mWidget = new Connectedline (mCanvas); break;
+               }
+               GetInputs ();
+               mWidget.Attach ();
+            } else tb.IsChecked = false;
+         }
+      }
+   }
 
-   /// <summary>Click event for undo button</summary>
-   /// <param name="sender"></param>
-   /// <param name="e"></param>
-   void OnUndo (object sender, RoutedEventArgs e) => mDocument.Undo ();
+   void OnEsc (object sender, KeyEventArgs e) { if (e.Key == Key.Escape) mWidget.AddShapes (); }
 
-   /// <summary>Determines whether the redo command is executable</summary>
-   /// <param name="sender"></param>
-   /// <param name="e"></param>
-   void CanExecute_Redo (object sender, CanExecuteRoutedEventArgs e) => mDocument.CanExecute_redo (sender, e);
+   void OnUndo_Click (object sender, RoutedEventArgs e) => mCanvas.Undo ();
 
-   /// <summary>Determines whether the undo command is executable</summary>
-   /// <param name="sender"></param>
-   /// <param name="e"></param>
-   void CanExecute_Undo (object sender, CanExecuteRoutedEventArgs e) => mDocument.CanExecute_undo (sender, e);
+   void OnRedo_Click (object sender, RoutedEventArgs e) => mCanvas.Redo ();
 
-   /// <summary>Event handler for shape buttons</summary>
-   /// <param name="sender"></param>
-   /// <param name="args"></param>
-   void OnModeChanged (object sender, RoutedEventArgs args) => mDocument.GetSelectedShape (sender);
+   void CanExecute_Redo (object sender, CanExecuteRoutedEventArgs e) {
+      if (mCanvas != null) {
+         e.CanExecute = mCanvas.CanExecute_Redo;
+         if (e.CanExecute) mRI.Opacity = 1; else mRI.Opacity = 0.2;
+      }
+   }
 
-   /// <summary>Event handler for escape key press</summary>
-   /// <param name="sender"></param>
-   /// <param name="e"></param>
+   void CanExecute_Undo (object sender, CanExecuteRoutedEventArgs e) {
+      if (mCanvas != null) {
+         e.CanExecute = mCanvas.CanExecute_Undo;
+         if (e.CanExecute) mUI.Opacity = 1; else mUI.Opacity = 0.2;
+      }
+   }
+
    void OnKeyDown (object sender, KeyEventArgs e) {
-      if (Keyboard.Modifiers == ModifierKeys.Alt && e.Key == Key.D4) OnExit (sender, e);
+      if (Keyboard.Modifiers == ModifierKeys.Alt && e.Key == Key.D4) Exit ();
       if (Keyboard.Modifiers == ModifierKeys.Control) {
          switch (e.Key) {
-            case Key.N: OnNew (sender, e); break;
-            case Key.O: OnOpen (sender, e); break;
-            case Key.S: OnSave (sender, e); break;
-            case Key.Z: OnUndo (sender, e); break;
-            case Key.Y: OnRedo (sender, e); break;
+            case Key.N: New (); break;
+            case Key.O: Load (); break;
+            case Key.S: Save (); break;
+            case Key.Z: mCanvas.Undo (); ; break;
+            case Key.Y: mCanvas.Redo (); break;
             default: break;
          }
       }
    }
 
-   void OnSelect (object sender, RoutedEventArgs e) => mDocument.Select (sender, e);
+   void GetInputs () {
+      mWidget.Data.Clear ();
+      InputBar.Children.Clear ();
+      var inputs = mWidget.Inputs;
+      foreach (var input in inputs) {
+         InputBar.Children.Add (new TextBlock { Text = input, Margin = new Thickness (10, 3, 0, 0), FontWeight = FontWeights.Bold });
+         var tb = new TextBox { Height = 20, Width = 40, Margin = new Thickness (10, 0, 0, 0) };
+         InputBar.Children.Add (tb);
+         mWidget.Data.Add (tb);
+      }
+   }
    #endregion
 
    #region Menu Items -------------------------------------------------------------
-   /// <summary>Click event for exit menu item</summary>
-   /// <param name="sender"></param>
-   /// <param name="e"></param>
-   void OnExit (object sender, RoutedEventArgs e) => mDocument.Exit (sender, e);
+   void OnNew_Click (object sender, RoutedEventArgs e) => New ();
 
-   /// <summary>Click event of new menu item</summary>
-   /// <param name="sender"></param>
-   /// <param name="e"></param>
-   void OnNew (object sender, RoutedEventArgs e) => mDocument.New (sender, e);
+   void OnExit_Click (object sender, RoutedEventArgs e) => Exit ();
 
-   /// <summary>Click event of open menu item</summary>
-   /// <param name="sender"></param>
-   /// <param name="e"></param>
-   void OnOpen (object sender, RoutedEventArgs e) => mDocument.Load (sender, e);
+   void OnLoad_Click (object sender, RoutedEventArgs e) => Load ();
 
-   /// <summary>Click event for save menu item</summary>
-   /// <param name="sender"></param>
-   /// <param name="e"></param>
-   void OnSave (object sender, RoutedEventArgs e) => mDocument.Save (sender, e);
+   void OnSave_Click (object sender, RoutedEventArgs e) => Save ();
 
-   /// <summary>Click event for save as menu item</summary>
-   /// <param name="sender"></param>
-   /// <param name="e"></param>
-   void OnSaveAs (object sender, RoutedEventArgs e) => mDocument.Save (sender, e);
+   void Save () { mDocManager.Save (); Title = SetTitle; }
+
+   void Load () { mDocManager.Load (); mCanvas.InvalidateVisual (); Title = SetTitle; }
+
+   void Exit () { if (mDocManager.Exit ()) Close (); }
+
+   void New () { mDocManager.New (); Title = SetTitle; }
    #endregion
 
-   /// <summary>Overriding on-closing method of main window</summary>
-   /// <param name="e"></param>
    protected override void OnClosing (CancelEventArgs e) {
-      if (mDocManager.IsModified) {
-         mDocManager.Prompt (null, null);
-         if (!mDocManager.IsCancelled) base.OnClosing (e); else e.Cancel = true;
-      } else base.OnClosing (e);
-   }
-
-   /// <summary>Overriding on-render method</summary>
-   /// <param name="dc"></param>
-   protected override void OnRender (DrawingContext dc) {
-      base.OnRender (dc);
-      mDocument.DrawShapes (dc);
+      if (mDocManager.Exit ()) base.OnClosing (e);
+      else e.Cancel = true;
    }
    #endregion
 
-   #region Fields -----------------------------------------------------------------
-   public Shape SelectedShape;
+   #region Property ---------------------------------------------------------------
+   string SetTitle => mDocManager.FileName + " - CADMaster";
    #endregion
 
    #region Private data -----------------------------------------------------------
-   Document mDocument = new ();
-   DocManager mDocManager = new ();
+   Widget mWidget;
+   DocManager mDocManager;
    #endregion
 }
+#endregion
 
-/// <summary>Implements RoutedCommand class from ICommand interface</summary>
+#region Class Commands ------------------------------------------------------------
+///<summary>Implements RoutedCommand class from ICommand interface</summary>
 public static class Commands {
    public static readonly RoutedCommand Undo = new ();
    public static readonly RoutedCommand Redo = new ();
 }
+#endregion
