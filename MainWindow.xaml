@@ -65,9 +65,6 @@
                     <Image Source="Images/rectangle.png"/>
                 </ToggleButton>
                 <Separator/>
-                <ToggleButton ToolTip="Circle" Click="OnModeChange">
-                    <Image Source="Images/circle.png"/>
-                </ToggleButton>
                 <ToggleButton ToolTip="ConnectedLine" Click="OnModeChange" KeyDown="OnEsc">
                     <Image Source="Images/connectedline.png"/>
                 </ToggleButton>

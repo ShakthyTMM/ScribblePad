@@ -11,6 +11,10 @@ public interface IDraw {
 
 #region Struct Point --------------------------------------------------------------
 public struct Point {    // Custom point struct with x and y co-ordinates
+   public Point (double x, double y) {
+      this.x = x; this.y = y;
+   }
+
    public double X { get { return x; } set { x = value; } }
    public double Y { get { return y; } set { y = value; } }
    double x;
@@ -47,53 +51,10 @@ public abstract class Shape {
 
    public Point StartPoint { get; set; }    // Starting point of the shape
    public Point EndPoint { get; set; }    // Ending point of the shape
+   public Bound Bound2 { get; set; }
    public List<Line> Lines => mConnectedLines;
    protected static List<Line> mConnectedLines = new ();    // List of lines 
-   protected enum EShapes { Rectangle, Line, Circle, ConnectedLine }
-   #endregion
-}
-#endregion
-
-#region Class Circle --------------------------------------------------------------
-public class Circle : Shape {
-   #region Constructor ------------------------------------------------------
-   public Circle () { }
-   public Circle (Point startPoint) : base (startPoint) { }
-   #endregion
-
-   #region Methods ----------------------------------------------------------
-   public override void Open (BinaryReader reader) {
-      (mStartPoint.X, mStartPoint.Y, mRadius) = (reader.ReadDouble (), reader.ReadDouble (), reader.ReadDouble ());
-      StartPoint = mStartPoint;
-   }
-
-   public override void Save (BinaryWriter writer) {
-      writer.Write ((int)EShapes.Circle);    // Used for identification of circle in binary file
-      writer.Write (StartPoint.X); writer.Write (StartPoint.Y); writer.Write (mRadius);
-   }
-
-   public override void Update (Point endPoint) {
-      mRadius = Math.Sqrt (Math.Pow (endPoint.X - StartPoint.X, 2) + Math.Pow (endPoint.Y - StartPoint.Y, 2));
-   }
-
-   public override bool IsSelected (Point point) {
-      double distance = Math.Sqrt (Math.Pow (point.X - mStartPoint.X, 2) + Math.Pow (point.Y - mStartPoint.Y, 2));
-      if (Math.Abs (distance - Radius) < 10) return true;
-      return false;
-   }
-
-   public override void Draw (IDraw draw) {
-      draw.DrawCircle (StartPoint, Radius);
-   }
-   #endregion
-
-   #region Property ---------------------------------------------------------
-   public double Radius { get { return mRadius; } }
-   #endregion
-
-   #region Private Data -----------------------------------------------------
-   double mRadius;
-   Point mStartPoint;
+   protected enum EShapes { Rectangle, Line, ConnectedLine }
    #endregion
 }
 #endregion
@@ -226,6 +187,61 @@ public class ConnectedLine : Shape {
 
    #region Private Data -----------------------------------------------------
    Point mStartPoint, mEndPoint;
+   #endregion
+}
+#endregion
+
+# region Struct Bound --------------------------------------------------------------
+public readonly struct Bound { // Bound in drawing space
+   #region Constructors
+   public Bound (Point cornerA, Point cornerB) {
+      MinX = Math.Min (cornerA.X, cornerB.X);
+      MaxX = Math.Max (cornerA.X, cornerB.X);
+      MinY = Math.Min (cornerA.Y, cornerB.Y);
+      MaxY = Math.Max (cornerA.Y, cornerB.Y);
+   }
+
+   public Bound (IEnumerable<Point> pts) {
+      MinX = pts.Min (p => p.X);
+      MaxX = pts.Max (p => p.X);
+      MinY = pts.Min (p => p.Y);
+      MaxY = pts.Max (p => p.Y);
+   }
+
+   public Bound (IEnumerable<Bound> bounds) {
+      MinX = bounds.Min (b => b.MinX);
+      MaxX = bounds.Max (b => b.MaxX);
+      MinY = bounds.Min (b => b.MinY);
+      MaxY = bounds.Max (b => b.MaxY);
+   }
+
+   public Bound () {
+      this = Empty;
+   }
+
+   public static readonly Bound Empty = new () { MinX = double.MaxValue, MinY = double.MaxValue, MaxX = double.MinValue, MaxY = double.MinValue };
+   #endregion
+
+   #region Properties
+   public double MinX { get; init; }
+   public double MaxX { get; init; }
+   public double MinY { get; init; }
+   public double MaxY { get; init; }
+   public double Width => MaxX - MinX;
+   public double Height => MaxY - MinY;
+   public Point Mid => new ((MaxX + MinX) / 2, (MaxY + MinY) / 2);
+   public bool IsEmpty => MinX > MaxX || MinY > MaxY;
+   #endregion
+
+   #region Methods
+   public Bound Inflated (Point ptAt, double factor) {
+      if (IsEmpty) return this;
+      var minX = ptAt.X - (ptAt.X - MinX) * factor;
+      var maxX = ptAt.X + (MaxX - ptAt.X) * factor;
+      var minY = ptAt.Y - (ptAt.Y - MinY) * factor;
+      var maxY = ptAt.Y + (MaxY - ptAt.Y) * factor;
+      return new () { MinX = minX, MaxX = maxX, MinY = minY, MaxY = maxY };
+   }
    #endregion
 }
 #endregion

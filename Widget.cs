@@ -17,24 +17,26 @@ public abstract class Widget {
 
    #region Methods -----------------------------------------------------------------------
    public void Attach () {
-      mEditor.MouseDown += OnMouseDown;
+      mEditor.MouseLeftButtonDown += OnMouseDown;
       mEditor.MouseMove += OnMouseMove;
    }
 
    public void Detach () {
-      mEditor.MouseDown -= OnMouseDown;
+      mEditor.MouseLeftButtonDown -= OnMouseDown;
       mEditor.MouseMove -= OnMouseMove;
    }
 
    protected virtual void OnMouseDown (object sender, MouseButtonEventArgs e) {
       if (e.RightButton == MouseButtonState.Released) {
          if (mEditor.IsDrawing) {
-            mEndPoint.X = e.GetPosition (mEditor).X; mEndPoint.Y = e.GetPosition (mEditor).Y;
+            mEnd = e.GetPosition (mEditor);
+            var end = mEditor.mInvProjXfm.Transform (mEnd); mEndPoint = new Point (end.X, end.Y);
             AddInputs (mEndPoint);
             mEditor.CurrentShape.Update (mEndPoint);
             AddShapes ();
          } else {
-            mStartPoint.X = e.GetPosition (mEditor).X; mStartPoint.Y = e.GetPosition (mEditor).Y;
+            mStart = e.GetPosition (mEditor);
+            var start = mEditor.mInvProjXfm.Transform (mStart); mStartPoint = new Point (start.X, start.Y);
             AddInputs (mStartPoint);
             (mEditor.IsDrawing, mEditor.IsModified) = (true, true);
          }
@@ -45,7 +47,8 @@ public abstract class Widget {
 
    protected virtual void OnMouseMove (object sender, MouseEventArgs e) {
       if (mEditor.IsDrawing) {
-         mEndPoint.X = e.GetPosition (mEditor).X; mEndPoint.Y = e.GetPosition (mEditor).Y;
+         mEnd = e.GetPosition (mEditor);
+         var end = mEditor.mInvProjXfm.Transform (mEnd); mEndPoint = new Point (end.X, end.Y);
          AddInputs (mEndPoint);
          mEditor.CurrentShape.Update (mEndPoint);
          mEditor.InvalidateVisual ();
@@ -56,7 +59,6 @@ public abstract class Widget {
    #endregion
 
    #region Properties and fields ---------------------------------------------------------
-
    public Point StartPoint { get => mStartPoint; set => mStartPoint = value; }
    protected Point mStartPoint;
 
@@ -70,6 +72,7 @@ public abstract class Widget {
    protected List<TextBox> Inputbox = new ();
 
    protected Editor mEditor;
+   System.Windows.Point mStart, mEnd;
    #endregion
 }
 #endregion
@@ -80,7 +83,7 @@ public class DrawingShapes : IDraw {
    private DrawingShapes () { }
    #endregion
 
-   #region Properties --------------------------------------------------------------------
+   #region Properties and fields ---------------------------------------------------------
    public static DrawingShapes GetInstance { get { mDS ??= new DrawingShapes (); return mDS; } }
    static DrawingShapes mDS;
 
@@ -89,6 +92,9 @@ public class DrawingShapes : IDraw {
 
    public DrawingContext DrawingContext { set => mDC = value; }
    DrawingContext mDC;
+
+   public Matrix Xfm { get => mXfm; set => mXfm = value; }
+   Matrix mXfm;
    #endregion
 
    #region Methods -----------------------------------------------------------------------
@@ -118,14 +124,18 @@ public class DrawingShapes : IDraw {
    }
 
    void getPoints (Point startPoint, Point endPoint) {
-      mStart = new (startPoint.X, startPoint.Y);
-      mEnd = new (endPoint.X, endPoint.Y);
+      start = new (startPoint.X, startPoint.Y);
+      end = new (endPoint.X, endPoint.Y);
+      mStart = mXfm.Transform (start); mEnd = mXfm.Transform (end);
    }
    #endregion
 
    #region Private Data ------------------------------------------------------------------
    Pen mPen = new (Brushes.Black, 1);
-   System.Windows.Point mStart, mEnd;
+   System.Windows.Point mStart, mEnd, start, end;
    #endregion
 }
 #endregion
+
+
+

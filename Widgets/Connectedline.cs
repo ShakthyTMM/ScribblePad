@@ -1,9 +1,8 @@
 ﻿using CAD;
 using Data;
 using System;
-using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
+using Point = Data.Point;
 
 namespace CADMaster.UI.Widgets;
 
@@ -20,11 +19,13 @@ public class Connectedline : Widget {
    protected override void OnMouseDown (object sender, MouseButtonEventArgs e) {
       if (e.RightButton == MouseButtonState.Released)
          if (mEditor.IsDrawing) {
-            mEndPoint.X = e.GetPosition (mEditor).X; mEndPoint.Y = e.GetPosition (mEditor).Y;
+            var mEnd = e.GetPosition (mEditor);
+            var end = mEditor.mInvProjXfm.Transform (mEnd); mEndPoint = new Point (end.X, end.Y);
             mEditor.CurrentShape.Update (mEndPoint);
             mEditor.CurrentShape.AddLines (mEndPoint);
          } else {
-            mStartPoint.X = e.GetPosition (mEditor).X; mStartPoint.Y = e.GetPosition (mEditor).Y;
+            var mStart = e.GetPosition (mEditor);
+            var start = mEditor.mInvProjXfm.Transform (mStart); mStartPoint = new Point (start.X, start.Y);
             mEditor.CurrentShape = new ConnectedLine (mStartPoint);
             (mEditor.IsDrawing, mEditor.IsModified) = (true, true);
          }
@@ -41,6 +42,7 @@ public class Connectedline : Widget {
 
    public override void AddShapes () {
       mEditor.CurrentShape.RemoveLine ();
+      mEditor.Status = "Connected Line: Pick start point";
       base.AddShapes ();
    }
    #endregion
@@ -48,7 +50,6 @@ public class Connectedline : Widget {
    #region Properties -----------------------------------------------------------
    double Dx => Math.Abs (StartPoint.X - EndPoint.X); double Dy => Math.Abs (StartPoint.Y - EndPoint.Y);
    double Distance => Math.Sqrt (Math.Pow (EndPoint.X - StartPoint.X, 2) + Math.Pow (EndPoint.Y - StartPoint.Y, 2));
-
    double Angle => Math.Atan2 (StartPoint.X - EndPoint.X, StartPoint.Y - EndPoint.Y) * (180 / Math.PI);
    #endregion
 }

@@ -8,7 +8,7 @@ namespace CAD;
 #region Class DocManager ----------------------------------------------------------
 public class DocManager {
    #region Constructor -------------------------------------------------------------
-   public DocManager (Editor editor) => mEditor = editor;
+   public DocManager (Drawing drawing, Editor editor) => (mDrawing, mEditor) = (drawing, editor);
    #endregion
 
    #region Methods -----------------------------------------------------------------
@@ -20,7 +20,7 @@ public class DocManager {
    }
 
    public void New () {
-      if (!mEditor.IsModified) mEditor.ClearScreen (); else if (mEditor.Shapes.Count != 0) Prompt ();
+      if (!mEditor.IsModified) mEditor.ClearScreen (); else if (mDrawing.Shapes.Count != 0) Prompt ();
       mPathToFile = "Untitled";
    }
 
@@ -38,8 +38,8 @@ public class DocManager {
          mEditor.IsModified = false; mEditor.IsSaved = true;
          mPathToFile = dlgBox.FileName;
          using BinaryWriter writer = new (File.Open (dlgBox.FileName, FileMode.Create));
-         writer.Write (mEditor.Shapes.Count); // Total number of shapes
-         foreach (var shape in mEditor.Shapes) shape.Save (writer);
+         writer.Write (mDrawing.Shapes.Count); // Total number of shapes
+         foreach (var shape in mDrawing.Shapes) shape.Save (writer);
       }
    }
 
@@ -59,13 +59,12 @@ public class DocManager {
                   switch (reader.ReadInt32 ()) {    // Reads the file based on the shape (0 - rectangle, 1 - line, 2 - circle, 3- connected lines)
                      case 0: Read (reader, new Rectangle ()); break;
                      case 1: Read (reader, new Line ()); break;
-                     case 2: Read (reader, new Circle ()); break;
-                     case 3: Read (reader, new ConnectedLine ()); break;
+                     case 2: Read (reader, new ConnectedLine ()); break;
                   }
 
                   void Read (BinaryReader reader, Shape shape) {    // Routine to read the shapes
                      shape.Open (reader);
-                     mEditor.Shapes.Add (shape);
+                     mDrawing.Shapes.Add (shape);
                   }
                }
             }
@@ -89,6 +88,7 @@ public class DocManager {
    #endregion
 
    #region Private Data ------------------------------------------------------------
+   Drawing mDrawing;
    Editor mEditor;
    string mPathToFile = "Untitled";
    #endregion

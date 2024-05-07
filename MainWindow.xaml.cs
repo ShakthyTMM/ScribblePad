@@ -7,11 +7,13 @@
 // To design scribble pad
 // ----------------------------------------------------------------------------------------
 using CADMaster.UI.Widgets;
+using Bound = Data.Bound;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace CAD;
 
@@ -20,8 +22,15 @@ public partial class MainWindow : Window {
    #region Constructor ------------------------------------------------------------
    public MainWindow () {
       InitializeComponent ();
-      mDocManager = new (mCanvas);
+      mPanWidget = new PanWidget (mCanvas, OnPan);
+      mDocManager = new (mCanvas.Drawing, mCanvas);
       Title = SetTitle;
+      Loaded += delegate {
+         var bound = new Bound (new Data.Point (-10, -10), new Data.Point (100, 100));
+         mCanvas.mProjXfm = Util.GetComputedMatrix (mCanvas.ActualWidth, mCanvas.ActualHeight, bound);
+         mCanvas.mInvProjXfm = mCanvas.mProjXfm; mCanvas.mInvProjXfm.Invert ();
+         mCanvas.Xfm = mCanvas.mProjXfm;
+      };
    }
    #endregion
 
@@ -36,7 +45,6 @@ public partial class MainWindow : Window {
                switch (clicked_tb.ToolTip) {
                   case "Line": mWidget = new Line (mCanvas); break;
                   case "Rectangle": mWidget = new Rectangle (mCanvas); break;
-                  case "Circle": mWidget = new Circle (mCanvas); break;
                   case "ConnectedLine": mWidget = new Connectedline (mCanvas); break;
                }
                GetInputs ();
@@ -115,6 +123,14 @@ public partial class MainWindow : Window {
       if (mDocManager.Exit ()) base.OnClosing (e);
       else e.Cancel = true;
    }
+
+   void OnPan (Vector panDisp) {
+      Matrix m = Matrix.Identity; m.Translate (panDisp.X, panDisp.Y);
+      mCanvas.mProjXfm.Append (m);
+      mCanvas.mInvProjXfm = mCanvas.mProjXfm; mCanvas.mInvProjXfm.Invert ();
+      mCanvas.Xfm = mCanvas.mProjXfm;
+      mCanvas.InvalidateVisual ();
+   }
    #endregion
 
    #region Property ---------------------------------------------------------------
@@ -123,6 +139,7 @@ public partial class MainWindow : Window {
 
    #region Private data -----------------------------------------------------------
    Widget mWidget;
+   PanWidget mPanWidget;
    DocManager mDocManager;
    #endregion
 }
