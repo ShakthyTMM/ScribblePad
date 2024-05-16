@@ -20,7 +20,7 @@ public class DocManager {
    }
 
    public void New () {
-      if (!mEditor.IsModified) mEditor.ClearScreen (); else if (mDrawing.Shapes.Count != 0) Prompt ();
+      if (!mEditor.IsModified) mEditor.ClearScreen (); else if (mDrawing.Plines.Count != 0) Prompt ();
       mPathToFile = "Untitled";
    }
 
@@ -38,8 +38,8 @@ public class DocManager {
          mEditor.IsModified = false; mEditor.IsSaved = true;
          mPathToFile = dlgBox.FileName;
          using BinaryWriter writer = new (File.Open (dlgBox.FileName, FileMode.Create));
-         writer.Write (mDrawing.Shapes.Count); // Total number of shapes
-         foreach (var shape in mDrawing.Shapes) shape.Save (writer);
+         writer.Write (mDrawing.Plines.Count); // Total number of pline
+         foreach (var pline in mDrawing.Plines) pline.Save (writer);
       }
    }
 
@@ -56,16 +56,9 @@ public class DocManager {
                mPathToFile = dlgBox.FileName;
                int totalCount = reader.ReadInt32 ();
                for (int i = 0; i < totalCount; i++) {
-                  switch (reader.ReadInt32 ()) {    // Reads the file based on the shape (0 - rectangle, 1 - line, 2 - circle, 3- connected lines)
-                     case 0: Read (reader, new Rectangle ()); break;
-                     case 1: Read (reader, new Line ()); break;
-                     case 2: Read (reader, new ConnectedLine ()); break;
-                  }
-
-                  void Read (BinaryReader reader, Shape shape) {    // Routine to read the shapes
-                     shape.Open (reader);
-                     mDrawing.Shapes.Add (shape);
-                  }
+                  var pline = new Pline ();
+                  pline.Load (reader);
+                  mDrawing.Plines.Add (pline);
                }
             }
       }

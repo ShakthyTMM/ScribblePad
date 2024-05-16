@@ -6,14 +6,13 @@
 // Scribble Pad
 // To design scribble pad
 // ----------------------------------------------------------------------------------------
-using CADMaster.UI.Widgets;
-using Bound = Data.Bound;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using Bound = Data.Bound;
 
 namespace CAD;
 
@@ -43,18 +42,19 @@ public partial class MainWindow : Window {
             if (tb == clicked_tb) {
                tb.IsChecked = true;
                switch (clicked_tb.ToolTip) {
-                  case "Line": mWidget = new Line (mCanvas); break;
-                  case "Rectangle": mWidget = new Rectangle (mCanvas); break;
-                  case "ConnectedLine": mWidget = new Connectedline (mCanvas); break;
+                  case "Line": mWidget = new LineBuilder (mCanvas); break;
+                  case "Rectangle": mWidget = new RectangleBuilder (mCanvas); break;
+                  case "ConnectedLine": mWidget = new ConnectedlineBuilder (mCanvas); break;
                }
                GetInputs ();
-               mWidget.Attach ();
+               mWidget?.Attach ();
+               mCanvas.mCurrentWidget= mWidget;
             } else tb.IsChecked = false;
          }
       }
    }
 
-   void OnEsc (object sender, KeyEventArgs e) { if (e.Key == Key.Escape) mWidget.AddShapes (); }
+   void OnEsc (object sender, KeyEventArgs e) { if (e.Key == Key.Escape) mWidget?.AddLine(); }
 
    void OnUndo_Click (object sender, RoutedEventArgs e) => mCanvas.Undo ();
 
@@ -89,14 +89,16 @@ public partial class MainWindow : Window {
    }
 
    void GetInputs () {
-      mWidget.Data.Clear ();
+      mWidget?.Data.Clear ();
       InputBar.Children.Clear ();
-      var inputs = mWidget.Inputs;
-      foreach (var input in inputs) {
-         InputBar.Children.Add (new TextBlock { Text = input, Margin = new Thickness (10, 3, 0, 0), FontWeight = FontWeights.Bold });
-         var tb = new TextBox { Height = 20, Width = 40, Margin = new Thickness (10, 0, 0, 0) };
-         InputBar.Children.Add (tb);
-         mWidget.Data.Add (tb);
+      var inputs = mWidget?.Inputs;
+      if (inputs != null) {
+         foreach (var input in inputs) {
+            InputBar.Children.Add (new TextBlock { Text = input, Margin = new Thickness (10, 3, 0, 0), FontWeight = FontWeights.Bold });
+            var tb = new TextBox { Height = 20, Width = 40, Margin = new Thickness (10, 0, 0, 0) };
+            InputBar.Children.Add (tb);
+            mWidget?.Data.Add (tb);
+         }
       }
    }
    #endregion
@@ -138,7 +140,7 @@ public partial class MainWindow : Window {
    #endregion
 
    #region Private data -----------------------------------------------------------
-   Widget mWidget;
+   Widget? mWidget;
    PanWidget mPanWidget;
    DocManager mDocManager;
    #endregion

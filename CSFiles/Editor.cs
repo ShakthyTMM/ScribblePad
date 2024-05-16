@@ -17,11 +17,8 @@ public class Editor : Canvas {
    #endregion
 
    #region Properties -----------------------------------------------------------------------
-   public bool IsDrawing { get => mIsDrawing; set => mIsDrawing = value; }
-   bool mIsDrawing;
+   public bool IsDrawing { get; set; }
 
-   public Shape CurrentShape { get => mCurrentShape; set => mCurrentShape = value; }
-   Shape mCurrentShape;
 
    public bool IsModified { get => mIsModified; set => mIsModified = value; }
    bool mIsModified;
@@ -31,17 +28,17 @@ public class Editor : Canvas {
 
    bool mIsSaved, mIsCancelled;
 
-   public Stack<Shape> Stack => mStack;
-   Stack<Shape> mStack = new ();
+   public Stack<Pline> Stack => mStack;
+   Stack<Pline> mStack = new ();
 
-   public bool CanExecute_Undo => mDrawing.Shapes.Count > 0 && IsModified && mUndo;
+   public bool CanExecute_Undo => mDrawing.Plines.Count > 0 && IsModified && mUndo;
    bool mUndo = true;
 
    public bool CanExecute_Redo => Stack.Count > 0 && mRedo;
    bool mRedo = true;
 
-   public DockPanel Dockpanel => mDockPanel;
-   DockPanel mDockPanel;
+   public DockPanel? Dockpanel => mDockPanel;
+   DockPanel? mDockPanel;
 
    public Drawing Drawing => mDrawing;
 
@@ -80,38 +77,27 @@ public class Editor : Canvas {
       ds.DrawingContext = dc;
       ds.Xfm = Xfm;
       base.OnRender (dc);
-      foreach (var shape in mDrawing.Shapes) {
+      foreach (var shape in mDrawing.Plines) {
          ds.Pen = mPen;
          shape.Draw (ds);
       }
-      if (mCurrentShape != null && mIsDrawing) {
-         ds.Pen = mFBPen;
-         mCurrentShape.Draw (ds);
-      }
+      ds.Pen = mFBPen;
+      mCurrentWidget?.Draw ();
    }
 
    public void ClearScreen () {
-      mDrawing.Shapes.Clear ();
-      mCurrentShape = null; mIsDrawing = false;
+      mDrawing.Plines.Clear ();
+      IsDrawing = false;
       mIsSaved = false; mIsModified = false;
       InvalidateVisual ();
    }
 
-   public void AddShapes () {
-      mCurrentShape.Bound2 = new Bound (mCurrentShape.StartPoint, mCurrentShape.EndPoint);
-      mDrawing.Add (mCurrentShape);
-      if (mCount != mDrawing.Shapes.Count) { Stack.Clear (); mRedo = false; }
-      mUndo = true; mRedo = true;
-      mCurrentShape = null;
-      mIsDrawing = false;
-      InvalidateVisual ();
-   }
-
    public void Undo () {
-      if (mDrawing.Shapes.Count > 0) {
-         mStack.Push (mDrawing.Shapes.Last ());
-         mDrawing.Shapes.Remove (mDrawing.Shapes.Last ());
-         mCount = mDrawing.Shapes.Count;
+      if (mDrawing.Plines.Count > 0) {
+         mRedo = true;
+         mStack.Push (mDrawing.Plines.Last ());
+         mDrawing.Plines.Remove (mDrawing.Plines.Last ());
+         mCount = mDrawing.Plines.Count;
          if (mCount == 0) mUndo = false;
          InvalidateVisual ();
       }
@@ -119,13 +105,19 @@ public class Editor : Canvas {
 
    public void Redo () {
       if (mStack.Count > 0) {
-         mDrawing.Shapes.Add (mStack.Pop ());
-         mCount = mDrawing.Shapes.Count;
+         mDrawing.Plines.Add (mStack.Pop ());
+         mCount = mDrawing.Plines.Count;
          if (mCount > 0) mUndo = true;
          if (mStack.Count == 0) mRedo = false;
          InvalidateVisual ();
       }
    }
+
+   public void EnableUndoRedo () {
+      if (mCount != mDrawing.Plines.Count) { Stack.Clear (); mRedo = false; }
+      mUndo = true; mRedo = true;
+   }
+
    #endregion
 
    #region Status Property ------------------------------------------------------------------
@@ -135,18 +127,19 @@ public class Editor : Canvas {
          if (mStatus != value) {
             mStatus = value;
             mDockPanel = Parent as DockPanel;
-            mPrompt = mDockPanel.FindName ("mPrompt") as TextBlock;
-            mPrompt.Text = mStatus; mPrompt.FontWeight = FontWeights.DemiBold; mPrompt.FontSize = 12;
+            if(mDockPanel!=null) mPrompt = mDockPanel.FindName ("mPrompt") as TextBlock;
+            if (mPrompt != null) { mPrompt.Text = mStatus; mPrompt.FontWeight = FontWeights.DemiBold; mPrompt.FontSize = 12; }
          }
       }
    }
    #endregion
 
    #region Private Data ---------------------------------------------------------------------
-   Drawing mDrawing = new ();
+   public Drawing mDrawing = new ();
+   public Widget? mCurrentWidget;
    Pen mFBPen = new (Brushes.Red, 1);
    Pen mPen = new (Brushes.Black, 1);
-   TextBlock mPrompt;
+   TextBlock? mPrompt;
    string mStatus = "Pick a tool";
    int mCount;
    #endregion
@@ -156,67 +149,21 @@ public class Editor : Canvas {
 #region Class Drawing -------------------------------------------------------------------
 public class Drawing {
    #region Method ----------------------------------------------------------------------
-   public void Add (Shape shape) {
-      Shapes.Add (shape);
-      Bound = new Bound (Shapes.Select (shape => shape.Bound2));
+   public void Add (Pline pline) {
+      Plines.Add (pline);
+      Bound = new Bound (Plines.Select (pline => pline.Bound));
    }
    #endregion
 
    #region Properties and fields -------------------------------------------------------
    public Bound Bound { get; private set; }
-   public List<Shape> Shapes { get => mShapes; }
-   List<Shape> mShapes = new ();
+   public List<Pline> Plines { get => mPlines; }
+   List<Pline> mPlines = new ();
    #endregion
 }
 #endregion
 
-#region Class PanWidget -----------------------------------------------------------------
-class PanWidget { // Works in screen space
-   #region Constructors ----------------------------------------------------------------
-   public PanWidget (UIElement eventSource, Action<Vector> onPan) {
-      mOnPan = onPan;
-      eventSource.MouseDown += (sender, e) => {
-         if (e.ChangedButton == MouseButton.Middle) PanStart (e.GetPosition (eventSource));
-      };
-      eventSource.MouseUp += (sender, e) => {
-         if (IsPanning) PanEnd (e.GetPosition (eventSource));
-      };
-      eventSource.MouseMove += (sender, e) => {
-         if (IsPanning) PanMove (e.GetPosition (eventSource));
-      };
-      eventSource.MouseLeave += (sender, e) => {
-         if (IsPanning) PanCancel ();
-      };
-   }
-   #endregion
 
-   #region Implementation --------------------------------------------------------------
-   bool IsPanning => mPrevPt != null;
-
-   void PanStart (Point pt) {
-      mPrevPt = pt;
-   }
-
-   void PanMove (Point pt) {
-      mOnPan.Invoke (pt - mPrevPt!.Value);
-      mPrevPt = pt;
-   }
-
-   void PanEnd (Point? pt) {
-      if (pt.HasValue)
-         PanMove (pt.Value);
-      mPrevPt = null;
-   }
-
-   void PanCancel () => PanEnd (null);
-   #endregion
-
-   #region Private Data ----------------------------------------------------------------
-   Point? mPrevPt;
-   readonly Action<Vector> mOnPan;
-   #endregion
-}
-#endregion
 
 
 
